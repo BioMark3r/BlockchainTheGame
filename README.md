@@ -8,7 +8,28 @@
 
 ## 🎮 Game Overview
 
-Blockchain: The Game is a competitive 2-player card game played with 50-card decks. Each turn you place validators, publish blocks, and play utility cards to earn credits. The game ends when a player plays the Fork card or the first player runs out of cards — whoever has the most credits wins.
+Blockchain: The Game is a competitive 2-player card game played with 50-card decks. Players race to earn the most credits by building a validator network and publishing blocks to the chain — but the game can end at any moment when someone plays the Fork card or runs out of cards.
+
+---
+
+## 💡 How Credits Work
+
+**Validators are the engine of the game.** Credits are earned whenever *any* player publishes a block — but only for the validators you have in play at that moment.
+
+- **No validators in play = 0 credits per block**, even if you published the block yourself.
+- **1 validator in play = 1 credit** every time any block is published.
+- **3 validators in play = 3 credits** every time any block is published.
+
+This means you earn credits both when you publish blocks *and* when your opponent does — as long as you have validators on the field.
+
+**The core loop:**
+1. Play Validator cards early to build your credit-earning engine.
+2. Collect Transaction cards and publish blocks often.
+3. Both players earn credits per block — so the more blocks published, the more your validators pay out.
+
+**Credit modifiers:**
+- **Validator Redundancy** doubles your credits per validator for the rest of the game. Playing two copies stacks to 4× per validator.
+- **Chain Split** breaks the shared credit model — after it is played, only the player who publishes a block earns credits for that block. Your opponent earns nothing even if they have validators.
 
 ---
 
@@ -19,30 +40,47 @@ Each player's deck contains 50 cards (the Genesis card is removed before play an
 | Card | Count | Effect |
 |---|---|---|
 | Genesis | 1 | Removed before play; placed in the center to start the chain |
-| Validator | 10 | Placed next to the chain; earns 1 credit per block published |
-| Transaction | 30 | Play exactly 3 to publish a block |
+| Validator | 10 | **Play this to your field.** Earns you 1 credit every time any player publishes a block. You need validators to earn any credits at all. |
+| Transaction | 30 | Play exactly 3 to publish a block and trigger credit payouts for all validators in play |
 | Reshuffle | 3 | Shuffle your discard pile back into your draw deck |
-| Chain Split | 1 | From this point forward, only the publishing player earns credits for their blocks |
-| Validator Redundancy | 2 | Doubles credits earned per validator for the rest of the game (stackable) |
-| Invalid Transaction | 2 | Remove one of your opponent's blocks from the chain |
-| Chain Reorg | 1 | Remove ALL blocks from the chain |
-| Fork | 1 | End the game immediately |
+| Validator Redundancy | 2 | Doubles your credits per validator for the rest of the game (two copies = 4× per validator) |
+| Chain Split | 1 | From this point, only the publishing player earns credits — opponents earn nothing per block even with validators |
+| Invalid Transaction | 2 | Remove one block from the chain (does not reverse credits already earned) |
+| Chain Reorg | 1 | Remove ALL blocks from the chain (Chain Split state persists) |
+| Fork | 1 | End the game immediately — highest credits wins |
 
 ---
 
 ## 🔄 Turn Actions
 
-Each turn, choose one of the following:
+Each turn, choose **one** of the following:
 
-1. **Play an action card** — play a validator, utility, or fork card from your hand
-2. **Publish a block** — play exactly 3 transaction cards to publish a block and trigger credit payouts
-3. **Discard and redraw** — discard any number of cards from your hand and draw back up
+1. **Play a card** — play a Validator, utility card (Reshuffle, Chain Split, Validator Redundancy, Invalid Transaction, Chain Reorg), or Fork from your hand. You must play it immediately; you cannot hold special cards for a later phase.
+2. **Publish a block** — select exactly 3 Transaction cards from your hand and click "Publish Block". This adds a block to the chain and triggers credit payouts: every player earns 1 credit per validator they have in play (modified by Validator Redundancy and Chain Split).
+3. **Discard and redraw** — select any number of cards to discard, then draw back up to a hand of 5. Use this to cycle through your deck looking for Transaction cards or Validators.
+
+After every action your hand is automatically refilled to 5 cards.
+
+---
+
+## 📋 Strategy Tips
+
+- **Play Validators early.** A Validator played on turn 1 earns you credits for every block published for the rest of the game — by you or your opponent.
+- **Both players earn on every block.** If your opponent has more validators than you, publishing blocks actually benefits them more. Either catch up with your own validators or use Chain Split to cut them off.
+- **Cycle aggressively.** Use Discard and Redraw to find Transaction cards when you don't have 3 in hand. Getting to 3 Transactions fast means more blocks, more credits.
+- **Save Chain Split for when you're ahead.** It only helps you if you have more validators than your opponent, or if you plan to publish several more blocks before the game ends.
+- **Invalid Transaction is denial, not value.** Use it to remove a block that your opponent got disproportionate credit from, or to set up a Chain Reorg play.
+- **Fork when you're winning.** The Fork card ends the game instantly — use it when you're ahead in credits and running low on cards, before your opponent can catch up.
 
 ---
 
 ## 🏆 Winning
 
-The game ends when a player plays the Fork card or the first player runs out of cards — the player with the most credits at that point wins.
+The game ends when:
+- A player plays the **Fork** card, or
+- **Player 1** runs out of cards (hand and draw pile both empty)
+
+The player with the **most credits** at that point wins. If it is a tie, the game is declared a draw.
 
 ---
 
