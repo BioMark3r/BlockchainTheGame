@@ -11,8 +11,6 @@
 # The client is served by nginx on port 80.
 # The WebSocket server runs on port 3001.
 
-version: '3.9'
-
 services:
   server:
     build:
