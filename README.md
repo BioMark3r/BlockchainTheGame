@@ -103,21 +103,23 @@ npm test
 
 ## 🚀 Deployment
 
-The server and client can be hosted separately.
+The easiest way to deploy is with Docker Compose — see [Docker Setup](#docker-setup) below.
 
-### Server (Railway)
-1. Connect your GitHub repo to [Railway](https://railway.app)
-2. Railway will detect `railway.json` and build using the server Dockerfile
-3. Set the `PORT` environment variable if needed (defaults to 3001)
-4. Note your deployed server URL (e.g. `wss://your-app.railway.app`)
+You can also host the server and client separately on any Node.js host and static file host.
 
-### Client (Vercel / Netlify / any static host)
-1. Set the environment variable `VITE_WS_URL=wss://your-server-url` before building
+### Environment variables
+| Variable | Default | Description |
+|---|---|---|
+| `VITE_WS_URL` | `ws://localhost:3001` | WebSocket server URL (set at client build time) |
+| `PORT` | `3001` | Port the WebSocket server listens on |
+
+### Client (any static host)
+1. Set `VITE_WS_URL` to your server's WebSocket URL (e.g. `wss://yourdomain.com/ws`)
 2. Run `npm run build --workspace=packages/client`
-3. Deploy the `packages/client/dist/` folder
+3. Deploy `packages/client/dist/` to Vercel, Netlify, or any static host
 
 ### Local development
-Copy `.env.example` to `.env.local` in `packages/client/` and adjust as needed.
+Copy `.env.example` to `packages/client/.env.local` and adjust `VITE_WS_URL` if needed.
 
 ---
 

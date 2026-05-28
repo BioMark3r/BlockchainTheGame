@@ -1,0 +1,40 @@
+# Blockchain: The Game — Docker Compose
+#
+# Quick start (local):
+#   docker compose up --build
+#   Then open http://localhost in your browser.
+#
+# Remote deployment:
+#   Set VITE_WS_URL to your server's public WebSocket URL before building:
+#   VITE_WS_URL=ws://your-server-ip:3001 docker compose up --build
+#
+# The client is served by nginx on port 80.
+# The WebSocket server runs on port 3001.
+
+version: '3.9'
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: packages/server/Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: "3001"
+    restart: unless-stopped
+
+  client:
+    build:
+      context: .
+      dockerfile: packages/client/Dockerfile
+      args:
+        # VITE_WS_URL is baked into the JS bundle at build time.
+        # Change to your public hostname/IP when deploying remotely, e.g.:
+        #   VITE_WS_URL: "ws://your-server-ip:3001"
+        VITE_WS_URL: "ws://localhost:3001"
+    ports:
+      - "80:80"
+    depends_on:
+      - server
+    restart: unless-stopped

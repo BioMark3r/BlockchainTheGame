@@ -1,16 +1,18 @@
 export type CpuDifficulty = 'easy' | 'normal' | 'hard'
 
-export enum CardType {
-  GENESIS = 'GENESIS',
-  VALIDATOR = 'VALIDATOR',
-  TRANSACTION = 'TRANSACTION',
-  RESHUFFLE = 'RESHUFFLE',
-  CHAIN_SPLIT = 'CHAIN_SPLIT',
-  VALIDATOR_REDUNDANCY = 'VALIDATOR_REDUNDANCY',
-  INVALID_TRANSACTION = 'INVALID_TRANSACTION',
-  CHAIN_REORG = 'CHAIN_REORG',
-  FORK = 'FORK',
-}
+export const CardType = {
+  GENESIS: 'GENESIS',
+  VALIDATOR: 'VALIDATOR',
+  TRANSACTION: 'TRANSACTION',
+  RESHUFFLE: 'RESHUFFLE',
+  CHAIN_SPLIT: 'CHAIN_SPLIT',
+  VALIDATOR_REDUNDANCY: 'VALIDATOR_REDUNDANCY',
+  INVALID_TRANSACTION: 'INVALID_TRANSACTION',
+  CHAIN_REORG: 'CHAIN_REORG',
+  FORK: 'FORK',
+} as const
+
+export type CardType = typeof CardType[keyof typeof CardType]
 
 export interface Card {
   id: string        // unique per card instance e.g. "validator-1"

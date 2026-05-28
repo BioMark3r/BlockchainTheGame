@@ -10,6 +10,7 @@ export default defineConfig({
     },
   },
   server: {
+    host: true,  // listen on 0.0.0.0
     port: 5173,
     proxy: {
       '/ws': {
