@@ -24,6 +24,8 @@ interface GameStore {
   error: string | null
   gameLog: LogEntry[]
   isReconnecting: boolean
+  displayName: string
+  playerNames: Record<string, string>
 
   setGameState: (state: GameState) => void
   setLocalPlayerId: (id: PlayerId) => void
@@ -35,6 +37,8 @@ interface GameStore {
   send: (msg: unknown) => void
   clearError: () => void
   clearLog: () => void
+  setDisplayName: (name: string) => void
+  setPlayerNames: (names: Record<string, string>) => void
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -46,6 +50,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   error: null,
   gameLog: [],
   isReconnecting: false,
+  displayName: '',
+  playerNames: {},
 
   setGameState: (newState) => {
     const prev = get().gameState
@@ -63,6 +69,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setIsReconnecting: (v) => set({ isReconnecting: v }),
   clearError: () => set({ error: null }),
   clearLog: () => set({ gameLog: [] }),
+  setDisplayName: (name) => set({ displayName: name }),
+  setPlayerNames: (names) => set({ playerNames: names }),
 
   send: (msg) => {
     const { ws } = get()

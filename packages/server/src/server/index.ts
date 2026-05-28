@@ -3,6 +3,7 @@ import { WebSocketServer, WebSocket } from 'ws'
 import { RoomManager } from './rooms.js'
 import { ReconnectManager } from './reconnect.js'
 import { createMessageHandler } from './handlers.js'
+import { checkRateLimit } from './rateLimit.js'
 
 const PORT = parseInt(process.env['PORT'] ?? '3001', 10)
 
@@ -22,6 +23,10 @@ wss.on('connection', (ws: WebSocket) => {
   const onMessage = createMessageHandler(ws, rooms, reconnect)
 
   ws.on('message', (data) => {
+    if (!checkRateLimit(ws)) {
+      ws.send(JSON.stringify({ type: 'ERROR', message: 'Rate limit exceeded. Please slow down.' }))
+      return
+    }
     const raw = data.toString()
     onMessage(raw)
   })

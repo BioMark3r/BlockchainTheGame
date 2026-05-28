@@ -2,6 +2,7 @@ import React from 'react'
 import type { PlayerState, PlayerId } from '@shared/types'
 import PlayerHand from './PlayerHand'
 import { displayName } from '../utils/display'
+import { useGameStore } from '../store/gameStore'
 
 interface Props {
   player: PlayerState
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export default function PlayerZone({ player, isLocal, isCurrentTurn, localPlayerId, onInvalidTxPending }: Props) {
+  const playerNames = useGameStore((s) => s.playerNames)
   const borderClass = isCurrentTurn
     ? 'border-green-500/50 shadow-[0_0_20px_rgba(0,255,136,0.15)]'
     : 'border-gray-700/50'
@@ -24,7 +26,7 @@ export default function PlayerZone({ player, isLocal, isCurrentTurn, localPlayer
           <span
             className={`inline-block w-2 h-2 rounded-full mr-1.5 ${isCurrentTurn ? 'bg-green-400 animate-pulse' : 'bg-gray-600'}`}
           />
-          <span className="font-bold text-sm">{displayName(player.id, player.isCpu)}</span>
+          <span className="font-bold text-sm">{displayName(player.id, player.isCpu, playerNames)}</span>
           {isLocal && (
             <span className="text-[10px] font-bold text-cyan-400 border border-cyan-500/50 rounded px-1 py-0.5 ml-1">
               YOU

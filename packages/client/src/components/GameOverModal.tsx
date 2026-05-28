@@ -2,6 +2,7 @@ import React from 'react'
 import type { GameState, PlayerId } from '@shared/types'
 import { useGameStore } from '../store/gameStore'
 import { computeGameStats, type PlayerStats } from '../utils/gameStats'
+import { displayName } from '../utils/display'
 
 interface Props {
   gameState: GameState
@@ -13,6 +14,7 @@ export default function GameOverModal({ gameState, localPlayerId, onPlayAgain }:
   const { winner, players } = gameState
   const isLocalWinner = winner === localPlayerId
   const log = useGameStore((s) => s.gameLog)
+  const playerNames = useGameStore((s) => s.playerNames)
   const stats = computeGameStats(log, gameState)
 
   const winnerPlayer = players.find((p) => p.id === winner)
@@ -21,7 +23,7 @@ export default function GameOverModal({ gameState, localPlayerId, onPlayAgain }:
       ? '🤖 CPU'
       : winner === localPlayerId
         ? 'You'
-        : winner
+        : displayName(winnerPlayer.id, false, playerNames)
     : 'Nobody'
 
   return (
@@ -46,7 +48,7 @@ export default function GameOverModal({ gameState, localPlayerId, onPlayAgain }:
           </h3>
           <div className="space-y-2">
             {players.map((p) => {
-              const label = p.isCpu ? '🤖 CPU' : p.id === localPlayerId ? 'You' : p.id
+              const label = p.isCpu ? '🤖 CPU' : p.id === localPlayerId ? 'You' : displayName(p.id, false, playerNames)
               const isWinner = p.id === winner
               return (
                 <div
@@ -77,7 +79,7 @@ export default function GameOverModal({ gameState, localPlayerId, onPlayAgain }:
               <tr>
                 <th className="text-left text-gray-500 font-medium pb-2 pr-2 w-1/2"></th>
                 {players.map((p) => {
-                  const label = p.isCpu ? '🤖 CPU' : p.id === localPlayerId ? 'You' : p.id
+                  const label = p.isCpu ? '🤖 CPU' : p.id === localPlayerId ? 'You' : displayName(p.id, false, playerNames)
                   return (
                     <th
                       key={p.id}

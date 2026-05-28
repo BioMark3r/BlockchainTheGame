@@ -10,16 +10,18 @@ export default function RoomLobby() {
   const error = useGameStore((s) => s.error)
   const roomCode = useGameStore((s) => s.roomCode)
   const clearError = useGameStore((s) => s.clearError)
+  const displayName = useGameStore((s) => s.displayName)
+  const setDisplayName = useGameStore((s) => s.setDisplayName)
 
   function handleCreate() {
     clearError()
-    connectWebSocket('create', '', vsCpu)
+    connectWebSocket('create', '', vsCpu, displayName.trim() || 'Player 1')
   }
 
   function handleJoin() {
     if (!joinCode.trim()) return
     clearError()
-    connectWebSocket('join', joinCode.trim().toUpperCase(), false)
+    connectWebSocket('join', joinCode.trim().toUpperCase(), false, displayName.trim() || 'Player 2')
   }
 
   return (
@@ -56,6 +58,18 @@ export default function RoomLobby() {
         {/* Create room */}
         {!roomCode && (
           <>
+            <div className="mb-5">
+              <label className="block text-xs text-gray-400 mb-1">Your display name (optional)</label>
+              <input
+                type="text"
+                placeholder="Enter your name"
+                maxLength={20}
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-yellow-400 text-white placeholder:text-gray-500"
+              />
+            </div>
+
             <div className="mb-6">
               <div className="flex items-center gap-3 mb-3">
                 <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer select-none">

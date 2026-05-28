@@ -4,8 +4,8 @@ import type { PlayerId, GameState } from '@shared/types'
 type ServerMessage =
   | { type: 'ROOM_CREATED'; roomCode: string; playerToken: string; playerId: PlayerId }
   | { type: 'ROOM_JOINED';  roomCode: string; playerToken: string; playerId: PlayerId }
-  | { type: 'GAME_STARTED'; state: GameState }
-  | { type: 'GAME_STATE';   state: GameState }
+  | { type: 'GAME_STARTED'; state: GameState; displayNames?: Record<string, string> }
+  | { type: 'GAME_STATE';   state: GameState; displayNames?: Record<string, string> }
   | { type: 'WAITING_FOR_PLAYER' }
   | { type: 'ERROR';        message: string }
 
@@ -37,7 +37,7 @@ export function clearReconnectStorage(): void {
 // Main connection
 // ---------------------------------------------------------------------------
 
-export function connectWebSocket(action: 'create' | 'join', roomCode: string, vsCpu: boolean): WebSocket {
+export function connectWebSocket(action: 'create' | 'join', roomCode: string, vsCpu: boolean, playerDisplayName?: string): WebSocket {
   const ws = new WebSocket(WS_URL)
 
   ws.addEventListener('open', () => {
@@ -45,9 +45,9 @@ export function connectWebSocket(action: 'create' | 'join', roomCode: string, vs
     useGameStore.getState().setError(null)
 
     if (action === 'create') {
-      ws.send(JSON.stringify({ type: 'CREATE_ROOM', vsComp: vsCpu }))
+      ws.send(JSON.stringify({ type: 'CREATE_ROOM', vsComp: vsCpu, displayName: playerDisplayName }))
     } else {
-      ws.send(JSON.stringify({ type: 'JOIN_ROOM', roomCode }))
+      ws.send(JSON.stringify({ type: 'JOIN_ROOM', roomCode, displayName: playerDisplayName }))
     }
   })
 
@@ -78,9 +78,11 @@ export function connectWebSocket(action: 'create' | 'join', roomCode: string, vs
       case 'GAME_STARTED':
         store.clearLog()
         store.setGameState(msg.state)
+        if (msg.displayNames) store.setPlayerNames(msg.displayNames)
         break
       case 'GAME_STATE':
         store.setGameState(msg.state)
+        if (msg.displayNames) store.setPlayerNames(msg.displayNames)
         break
       case 'WAITING_FOR_PLAYER':
         // no-op — lobby shows "waiting" based on roomCode being set with no gameState

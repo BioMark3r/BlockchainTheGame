@@ -18,6 +18,7 @@ export default function GameBoard({ onReturnToLobby }: Props) {
   const localPlayerId = useGameStore((s) => s.localPlayerId)
   const send = useGameStore((s) => s.send)
   const error = useGameStore((s) => s.error)
+  const playerNames = useGameStore((s) => s.playerNames)
   const [invalidTxCardId, setInvalidTxCardId] = useState<string | null>(null)
   const [confirmingConcede, setConfirmingConcede] = useState(false)
   const [showHowToPlay, setShowHowToPlay] = useState(false)
@@ -41,7 +42,7 @@ export default function GameBoard({ onReturnToLobby }: Props) {
     <span className="text-green-400 font-bold tracking-wide">▶ YOUR TURN</span>
   ) : (
     <span className="text-gray-500">
-      ⏳ <span className="text-white">{displayName(opponentPlayer.id, opponentPlayer.isCpu)}</span>'s turn
+      ⏳ <span className="text-white">{displayName(opponentPlayer.id, opponentPlayer.isCpu, playerNames)}</span>'s turn
     </span>
   )
 

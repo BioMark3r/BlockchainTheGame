@@ -1,6 +1,7 @@
 import React from 'react'
 import type { Block } from '@shared/types'
 import { displayName } from '../utils/display'
+import { useGameStore } from '../store/gameStore'
 
 interface Props {
   block: Block
@@ -12,8 +13,9 @@ interface Props {
 }
 
 export default function BlockCard({ block, index, isFlashing, isNew = false, isTargetable = false, onSelect }: Props) {
+  const playerNames = useGameStore((s) => s.playerNames)
   const isCpu = block.publishedBy === 'cpu'
-  const publisher = displayName(block.publishedBy, isCpu)
+  const publisher = displayName(block.publishedBy, isCpu, playerNames)
 
   return (
     <div

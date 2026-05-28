@@ -11,8 +11,8 @@ import { triggerCpuTurn } from './ai.js'
 // Message shapes (incoming)
 // ---------------------------------------------------------------------------
 
-interface CreateRoomMsg { type: 'CREATE_ROOM'; vsComp: boolean }
-interface JoinRoomMsg   { type: 'JOIN_ROOM';   roomCode: string }
+interface CreateRoomMsg { type: 'CREATE_ROOM'; vsComp: boolean; displayName?: string }
+interface JoinRoomMsg   { type: 'JOIN_ROOM';   roomCode: string; displayName?: string }
 interface RejoinMsg     { type: 'REJOIN';       roomCode: string; playerToken: string }
 interface ActionMsg     { type: 'ACTION';       action: TurnAction }
 interface ConcedeMsg    { type: 'CONCEDE' }
@@ -75,10 +75,17 @@ function sendError(ws: WebSocket, message: string): void {
   send(ws, { type: 'ERROR', message })
 }
 
+function getDisplayNames(room: Room): Record<string, string> {
+  const names: Record<string, string> = {}
+  for (const p of room.players) {
+    if (p) names[p.playerId] = p.displayName
+  }
+  return names
+}
+
 /** Broadcast the current game state to all human players in a room */
 function broadcastState(room: Room, state: GameState): void {
-  const msgType = state.phase === 'ended' ? 'GAME_STATE' : 'GAME_STATE'
-  const payload = { type: msgType, state }
+  const payload = { type: 'GAME_STATE', state, displayNames: getDisplayNames(room) }
   for (const player of room.players) {
     if (player && !player.isCpu && player.ws) {
       send(player.ws, payload)
@@ -94,7 +101,7 @@ function startGame(room: Room, rooms: RoomManager, reconnect: ReconnectManager):
   const state = createGame(p1.playerId, p2.playerId, p2.isCpu)
   room.gameState = state
 
-  const startPayload = { type: 'GAME_STARTED', state }
+  const startPayload = { type: 'GAME_STARTED', state, displayNames: getDisplayNames(room) }
   for (const player of room.players) {
     if (player && !player.isCpu && player.ws) {
       send(player.ws, startPayload)
@@ -121,6 +128,7 @@ function fillCpuAndStart(room: Room, rooms: RoomManager, reconnect: ReconnectMan
     playerToken: randomUUID(), // not used for auth but keeps type consistent
     isCpu: true,
     ws: null,
+    displayName: '🤖 CPU',
   }
   room.cpuSlot = true
   startGame(room, rooms, reconnect)
@@ -141,8 +149,9 @@ export function handleCreateRoom(
 ): void {
   const { room, playerToken } = rooms.createRoom(msg.vsComp)
 
-  // Attach the creator's WebSocket
+  // Attach the creator's WebSocket and set display name
   room.players[0]!.ws = ws
+  room.players[0]!.displayName = msg.displayName ?? 'Player 1'
 
   send(ws, {
     type: 'ROOM_CREATED',
@@ -185,6 +194,7 @@ export function handleJoinRoom(
 
   const { room, playerToken } = result
   room.players[1]!.ws = ws
+  room.players[1]!.displayName = msg.displayName ?? 'Player 2'
 
   send(ws, {
     type: 'ROOM_JOINED',

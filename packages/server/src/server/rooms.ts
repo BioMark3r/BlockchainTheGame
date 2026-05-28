@@ -11,6 +11,7 @@ export interface RoomPlayer {
   playerToken: string
   isCpu: boolean
   ws: WebSocket | null
+  displayName: string
 }
 
 export interface Room {
@@ -58,7 +59,7 @@ export class RoomManager {
     const room: Room = {
       code,
       players: [
-        { playerId: 'player1', playerToken, isCpu: false, ws: null },
+        { playerId: 'player1', playerToken, isCpu: false, ws: null, displayName: 'Player 1' },
         null,
       ],
       gameState: null,
@@ -81,7 +82,7 @@ export class RoomManager {
     if (room.cpuSlot) return { ok: false, error: 'Room is CPU-only' }
 
     const playerToken = randomUUID()
-    room.players[1] = { playerId: 'player2', playerToken, isCpu: false, ws: null }
+    room.players[1] = { playerId: 'player2', playerToken, isCpu: false, ws: null, displayName: 'Player 2' }
 
     // Cancel the waiting / auto-cpu timers since a human joined
     if (room.waitingTimer !== null) {
