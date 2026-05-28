@@ -139,9 +139,25 @@ npm test
 
 ---
 
-## 🚀 Deployment
+## 🐳 Docker Setup
 
-The easiest way to deploy is with Docker Compose — see [Docker Setup](#docker-setup) below.
+The easiest way to run the full game is with Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+Then open **http://localhost** in your browser. The WebSocket server runs on port 3001 and the client is served by nginx on port 80.
+
+**Deploying to a remote server** — the WebSocket URL is baked into the client bundle at build time, so set it before building:
+
+```bash
+VITE_WS_URL=ws://your-server-ip:3001 docker compose up --build
+```
+
+---
+
+## 🚀 Deployment
 
 You can also host the server and client separately on any Node.js host and static file host.
 

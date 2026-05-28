@@ -1,21 +1,22 @@
 FROM node:20-alpine
 WORKDIR /app
 
-# Copy root package files for workspace setup
+# Copy ALL workspace manifests first so npm ci can resolve the workspace graph
 COPY package.json package-lock.json ./
 COPY packages/server/package.json ./packages/server/
-# src/engine and src/shared are included in the server build (see tsconfig rootDir)
+COPY packages/client/package.json ./packages/client/
+
+# Install all deps from lock file (fast and deterministic)
+RUN npm ci
+
+# Copy source files needed for the server build
+# (src/engine and src/shared are included via tsconfig rootDir)
 COPY src/ ./src/
-
-# Install all deps (needed for workspace)
-RUN npm install --workspace=packages/server --include-workspace-root
-
-# Copy server source
 COPY packages/server/ ./packages/server/
 
-# Build TypeScript
-# rootDir is repo root, outDir is packages/server/dist — so the compiled entry
-# point lands at packages/server/dist/packages/server/src/server/index.js
+# Compile TypeScript
+# tsconfig rootDir=../../ (repo root), outDir=dist (relative to packages/server/)
+# Entry point compiles to: packages/server/dist/packages/server/src/server/index.js
 RUN npm run build --workspace=packages/server
 
 EXPOSE 3001

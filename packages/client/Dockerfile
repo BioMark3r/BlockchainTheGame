@@ -2,19 +2,21 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Copy workspace root and client package manifests first (layer cache)
+# Copy ALL workspace manifests first so npm ci can resolve the workspace graph
 COPY package.json package-lock.json ./
+COPY packages/server/package.json ./packages/server/
 COPY packages/client/package.json ./packages/client/
-# src/shared is aliased as @shared in the client (see vite.config.ts)
+
+# Install all deps from lock file (fast and deterministic)
+RUN npm ci
+
+# Copy source files needed for the client build
+# (src/shared is aliased as @shared in vite.config.ts)
 COPY src/ ./src/
-
-# Install client deps via npm workspaces
-RUN npm install --workspace=packages/client --include-workspace-root
-
-# Copy full client source
 COPY packages/client/ ./packages/client/
 
-# VITE_WS_URL is baked into the bundle at build time — override for remote deploys
+# VITE_WS_URL is baked into the JS bundle at build time.
+# Override when deploying remotely, e.g.: --build-arg VITE_WS_URL=ws://your-server:3001
 ARG VITE_WS_URL=ws://localhost:3001
 ENV VITE_WS_URL=$VITE_WS_URL
 

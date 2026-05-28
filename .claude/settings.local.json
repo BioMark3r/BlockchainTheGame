@@ -12,7 +12,8 @@
       "mcp__Claude_in_Chrome__tabs_context_mcp",
       "Read(//mnt/i/Blockchain_The_Game/packages/**)",
       "Bash(npx vite *)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173)",
+      "Bash(python3 -m json.tool)"
     ]
   }
 }

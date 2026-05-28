@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/server/index.ts",
     "build": "tsc -b",
-    "start": "node dist/server/index.js"
+    "start": "node dist/packages/server/src/server/index.js"
   },
   "dependencies": {
     "uuid": "^10.0.0",
