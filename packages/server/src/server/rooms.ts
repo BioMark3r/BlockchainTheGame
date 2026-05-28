@@ -23,6 +23,8 @@ export interface Room {
   waitingTimer: ReturnType<typeof setInterval> | null
   /** Timer that auto-fills CPU after 30s when no human joins */
   autoCpuTimer: ReturnType<typeof setTimeout> | null
+  /** Timer that auto-skips the active player's turn after 60s */
+  turnTimer: ReturnType<typeof setTimeout> | null
 }
 
 // ---------------------------------------------------------------------------
@@ -63,6 +65,7 @@ export class RoomManager {
       cpuSlot: vsComp,
       waitingTimer: null,
       autoCpuTimer: null,
+      turnTimer: null,
     }
 
     this.rooms.set(code, room)
@@ -108,6 +111,7 @@ export class RoomManager {
     // Cancel any lingering timers
     if (room.waitingTimer !== null) clearInterval(room.waitingTimer)
     if (room.autoCpuTimer !== null) clearTimeout(room.autoCpuTimer)
+    if (room.turnTimer !== null) clearTimeout(room.turnTimer)
     this.rooms.delete(roomCode)
   }
 }

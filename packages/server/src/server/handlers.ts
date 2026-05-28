@@ -20,6 +20,48 @@ interface ConcedeMsg    { type: 'CONCEDE' }
 type IncomingMsg = CreateRoomMsg | JoinRoomMsg | RejoinMsg | ActionMsg | ConcedeMsg
 
 // ---------------------------------------------------------------------------
+// Turn timer
+// ---------------------------------------------------------------------------
+
+const TURN_TIMEOUT_MS = 60_000
+
+function clearTurnTimer(room: Room): void {
+  if (room.turnTimer) {
+    clearTimeout(room.turnTimer)
+    room.turnTimer = null
+  }
+}
+
+function startTurnTimer(room: Room): void {
+  clearTurnTimer(room)
+  if (!room.gameState || room.gameState.phase !== 'playing') return
+
+  const activePlayerId = room.gameState.currentTurn
+  // Skip CPU turns — they act immediately via triggerCpuTurn
+  const activePlayer = room.gameState.players.find(p => p.id === activePlayerId)
+  if (activePlayer?.isCpu) return
+
+  room.turnTimer = setTimeout(() => {
+    if (!room.gameState || room.gameState.phase !== 'playing') return
+    if (room.gameState.currentTurn !== activePlayerId) return
+
+    // Auto-skip: discard 0 cards (just advances turn + draws to 5)
+    const result = applyAction(room.gameState, {
+      type: 'DISCARD_REDRAW',
+      playerId: activePlayerId,
+      cardIdsToDiscard: [],
+    })
+    if (result.success) {
+      room.gameState = result.state
+      broadcastState(room, result.state)
+      if (result.state.phase === 'playing') {
+        startTurnTimer(room) // start timer for next player
+      }
+    }
+  }, TURN_TIMEOUT_MS)
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -59,9 +101,16 @@ function startGame(room: Room, rooms: RoomManager, reconnect: ReconnectManager):
     }
   }
 
-  // If it's the CPU's first turn, kick off its loop
+  // If it's the CPU's first turn, kick off its loop; otherwise start human turn timer
   if (p2.isCpu && state.currentTurn === p2.playerId) {
-    setTimeout(() => triggerCpuTurn(room, broadcastState), 500)
+    setTimeout(() => {
+      triggerCpuTurn(room, broadcastState)
+      if (room.gameState && room.gameState.phase === 'playing') {
+        startTurnTimer(room)
+      }
+    }, 500)
+  } else {
+    startTurnTimer(room)
   }
 }
 
@@ -218,6 +267,7 @@ export function handlePlayerAction(
 
   // Schedule room cleanup after game ends (cancel reconnect timers first)
   if (result.state.phase === 'ended') {
+    clearTurnTimer(room)
     setTimeout(() => {
       reconnect.cancelAllForRoom(room.code)
       rooms.destroyRoom(room.code)
@@ -225,11 +275,19 @@ export function handlePlayerAction(
     return
   }
 
-  // Trigger CPU turn if it's now the CPU's turn
+  // Trigger CPU turn if it's now the CPU's turn, otherwise start human turn timer
   if (result.state.phase === 'playing') {
     const cpuPlayer = room.players.find((p) => p?.isCpu)
     if (cpuPlayer && result.state.currentTurn === cpuPlayer.playerId) {
-      setTimeout(() => triggerCpuTurn(room, broadcastState), 500)
+      setTimeout(() => {
+        triggerCpuTurn(room, broadcastState)
+        // After CPU turn, start timer for next human turn (if game still playing)
+        if (room.gameState && room.gameState.phase === 'playing') {
+          startTurnTimer(room)
+        }
+      }, 500)
+    } else {
+      startTurnTimer(room)
     }
   }
 }
@@ -285,6 +343,7 @@ export function handleConcede(
     genesisCard: prevState.genesisCard,
   }
 
+  clearTurnTimer(room)
   broadcastState(room, room.gameState!)
 
   setTimeout(() => {

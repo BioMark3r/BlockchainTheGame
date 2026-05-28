@@ -5,6 +5,7 @@ import PlayerZone from './PlayerZone'
 import GameOverModal from './GameOverModal'
 import GameLog from './GameLog'
 import HowToPlayModal from './HowToPlayModal'
+import TurnTimer from './TurnTimer'
 import type { PlayerState } from '@shared/types'
 import { displayName } from '../utils/display'
 
@@ -66,6 +67,7 @@ export default function GameBoard({ onReturnToLobby }: Props) {
         </div>
         <div className="flex items-center gap-3">
           <div className="text-sm">{turnBanner}</div>
+          {phase === 'playing' && <TurnTimer isMyTurn={isMyTurn} key={currentTurn} />}
           {phase === 'playing' && (
             confirmingConcede ? (
               <span className="flex items-center gap-2 text-xs">

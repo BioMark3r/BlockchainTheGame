@@ -23,6 +23,7 @@ interface GameStore {
   ws: WebSocket | null
   error: string | null
   gameLog: LogEntry[]
+  isReconnecting: boolean
 
   setGameState: (state: GameState) => void
   setLocalPlayerId: (id: PlayerId) => void
@@ -30,6 +31,7 @@ interface GameStore {
   setPlayerToken: (token: string) => void
   setWs: (ws: WebSocket | null) => void
   setError: (msg: string | null) => void
+  setIsReconnecting: (v: boolean) => void
   send: (msg: unknown) => void
   clearError: () => void
   clearLog: () => void
@@ -43,6 +45,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   ws: null,
   error: null,
   gameLog: [],
+  isReconnecting: false,
 
   setGameState: (newState) => {
     const prev = get().gameState
@@ -57,6 +60,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setPlayerToken: (token) => set({ playerToken: token }),
   setWs: (ws) => set({ ws }),
   setError: (msg) => set({ error: msg }),
+  setIsReconnecting: (v) => set({ isReconnecting: v }),
   clearError: () => set({ error: null }),
   clearLog: () => set({ gameLog: [] }),
 

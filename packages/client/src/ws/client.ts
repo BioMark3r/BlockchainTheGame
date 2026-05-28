@@ -11,6 +11,32 @@ type ServerMessage =
 
 const WS_URL = import.meta.env.VITE_WS_URL ?? 'ws://localhost:3001'
 
+// ---------------------------------------------------------------------------
+// sessionStorage helpers
+// ---------------------------------------------------------------------------
+
+const KEYS = {
+  roomCode:    'btg_roomCode',
+  playerToken: 'btg_playerToken',
+  playerId:    'btg_playerId',
+} as const
+
+function saveReconnectInfo(roomCode: string, playerToken: string, playerId: string): void {
+  sessionStorage.setItem(KEYS.roomCode,    roomCode)
+  sessionStorage.setItem(KEYS.playerToken, playerToken)
+  sessionStorage.setItem(KEYS.playerId,    playerId)
+}
+
+export function clearReconnectStorage(): void {
+  sessionStorage.removeItem(KEYS.roomCode)
+  sessionStorage.removeItem(KEYS.playerToken)
+  sessionStorage.removeItem(KEYS.playerId)
+}
+
+// ---------------------------------------------------------------------------
+// Main connection
+// ---------------------------------------------------------------------------
+
 export function connectWebSocket(action: 'create' | 'join', roomCode: string, vsCpu: boolean): WebSocket {
   const ws = new WebSocket(WS_URL)
 
@@ -41,11 +67,13 @@ export function connectWebSocket(action: 'create' | 'join', roomCode: string, vs
         store.setRoomCode(msg.roomCode)
         store.setPlayerToken(msg.playerToken)
         store.setLocalPlayerId(msg.playerId)
+        saveReconnectInfo(msg.roomCode, msg.playerToken, msg.playerId)
         break
       case 'ROOM_JOINED':
         store.setRoomCode(msg.roomCode)
         store.setPlayerToken(msg.playerToken)
         store.setLocalPlayerId(msg.playerId)
+        saveReconnectInfo(msg.roomCode, msg.playerToken, msg.playerId)
         break
       case 'GAME_STARTED':
         store.clearLog()
@@ -64,7 +92,18 @@ export function connectWebSocket(action: 'create' | 'join', roomCode: string, vs
   })
 
   ws.addEventListener('close', () => {
-    useGameStore.getState().setWs(null)
+    const store = useGameStore.getState()
+    const { gameState } = store
+    const isActiveMidGame = gameState !== null && gameState.phase === 'playing'
+
+    if (isActiveMidGame) {
+      // Stay in game view but signal that we're trying to reconnect
+      store.setIsReconnecting(true)
+    } else {
+      clearReconnectStorage()
+    }
+
+    store.setWs(null)
   })
 
   ws.addEventListener('error', () => {
@@ -72,4 +111,78 @@ export function connectWebSocket(action: 'create' | 'join', roomCode: string, vs
   })
 
   return ws
+}
+
+// ---------------------------------------------------------------------------
+// Rejoin
+// ---------------------------------------------------------------------------
+
+export function attemptRejoin(): boolean {
+  const storedRoomCode    = sessionStorage.getItem(KEYS.roomCode)
+  const storedPlayerToken = sessionStorage.getItem(KEYS.playerToken)
+  const storedPlayerId    = sessionStorage.getItem(KEYS.playerId)
+
+  if (!storedRoomCode || !storedPlayerToken || !storedPlayerId) {
+    return false
+  }
+
+  const ws = new WebSocket(WS_URL)
+
+  ws.addEventListener('open', () => {
+    ws.send(JSON.stringify({ type: 'REJOIN', roomCode: storedRoomCode, playerToken: storedPlayerToken }))
+  })
+
+  ws.addEventListener('message', (event: MessageEvent<string>) => {
+    let msg: ServerMessage
+    try {
+      msg = JSON.parse(event.data) as ServerMessage
+    } catch {
+      console.error('Failed to parse rejoin server message', event.data)
+      return
+    }
+
+    const store = useGameStore.getState()
+
+    switch (msg.type) {
+      case 'GAME_STATE': {
+        store.setLocalPlayerId(storedPlayerId as PlayerId)
+        store.setWs(ws)
+        store.setGameState(msg.state)
+        store.setIsReconnecting(false)
+        break
+      }
+      case 'ERROR': {
+        clearReconnectStorage()
+        store.setIsReconnecting(false)
+        store.setError(msg.message)
+        ws.close()
+        break
+      }
+      default:
+        break
+    }
+  })
+
+  ws.addEventListener('close', () => {
+    const store = useGameStore.getState()
+    const { gameState } = store
+    const isActiveMidGame = gameState !== null && gameState.phase === 'playing'
+
+    if (isActiveMidGame) {
+      store.setIsReconnecting(true)
+    } else {
+      clearReconnectStorage()
+    }
+
+    // Only null out ws if it's still this socket
+    if (store.ws === ws) {
+      store.setWs(null)
+    }
+  })
+
+  ws.addEventListener('error', () => {
+    useGameStore.getState().setError('WebSocket connection error during rejoin.')
+  })
+
+  return true
 }
