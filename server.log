@@ -1,0 +1,32 @@
+[Server] Listening on http://localhost:3001
+[Server] WebSocket endpoint: ws://localhost:3001
+[WS] Client connected
+[WS] Client connected
+[WS] Client disconnected
+[WS] Starting reconnect timer for player2 in room DRD5WZ
+[WS] Client disconnected
+[WS] Starting reconnect timer for player1 in room DRD5WZ
+[WS] Client connected
+[WS] Client connected
+[WS] Client disconnected
+[WS] Starting reconnect timer for player2 in room HNCRSN
+[WS] Client disconnected
+[WS] Starting reconnect timer for player1 in room HNCRSN
+[WS] Client connected
+[WS] Client connected
+[WS] Client disconnected
+[WS] Starting reconnect timer for player1 in room SZXZLS
+[WS] Client disconnected
+[WS] Starting reconnect timer for player2 in room SZXZLS
+[WS] Client connected
+[WS] Client connected
+[WS] Client disconnected
+[WS] Starting reconnect timer for player1 in room XWPCZR
+[WS] Client disconnected
+[WS] Starting reconnect timer for player2 in room XWPCZR
+[WS] Client connected
+[WS] Client connected
+[WS] Client disconnected
+[WS] Starting reconnect timer for player2 in room 94RGMX
+[WS] Client disconnected
+[WS] Starting reconnect timer for player1 in room 94RGMX

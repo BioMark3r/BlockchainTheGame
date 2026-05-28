@@ -25,7 +25,7 @@ export default function RoomLobby() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#060910]">
       {showHowToPlay && <HowToPlayModal onClose={() => setShowHowToPlay(false)} />}
-      <div className="bg-[#0a0e1a] border border-[#1e2d4a] rounded-2xl p-8 w-full max-w-md shadow-2xl">
+      <div className="bg-[#0a0e1a] border border-[#1e2d4a] rounded-2xl p-5 sm:p-8 w-full max-w-md shadow-2xl">
         <h1 className="text-3xl font-bold text-center mb-2 text-yellow-400 drop-shadow-[0_0_8px_rgba(255,230,0,0.6)] tracking-tight">
           ⛓️ Blockchain: The Game
         </h1>

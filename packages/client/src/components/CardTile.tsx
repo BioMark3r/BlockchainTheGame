@@ -81,7 +81,7 @@ export default function CardTile({ card, isMyTurn, isSelected = false, isDiscard
         onMouseLeave={() => setShowTooltip(false)}
         className={[
           'relative flex flex-col items-center justify-between',
-          'w-20 h-28 rounded-xl border-2 text-xs font-semibold transition-all duration-150 p-1.5',
+          'w-16 h-24 sm:w-20 sm:h-28 rounded-xl border-2 text-xs font-semibold transition-all duration-150 p-1.5',
           'animate-card-draw',
           colors.border,
           colors.bg,
@@ -104,15 +104,15 @@ export default function CardTile({ card, isMyTurn, isSelected = false, isDiscard
         }
       >
         {/* Top: card type label */}
-        <span className={`text-[9px] font-bold uppercase tracking-wider w-full text-left ${colors.accent}`}>
+        <span className={`text-[8px] sm:text-[9px] font-bold uppercase tracking-wider w-full text-left ${colors.accent}`}>
           {CARD_LABELS[card.type]}
         </span>
 
         {/* Center: icon */}
-        <span className="text-3xl leading-none">{CARD_ICONS[card.type]}</span>
+        <span className="text-2xl sm:text-3xl leading-none">{CARD_ICONS[card.type]}</span>
 
         {/* Bottom: short ID */}
-        <span className="text-[9px] text-gray-500 font-mono w-full text-right">
+        <span className="text-[8px] sm:text-[9px] text-gray-500 font-mono w-full text-right">
           {card.id.slice(-4)}
         </span>
 

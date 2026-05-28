@@ -170,7 +170,7 @@ export default function PlayerHand({ hand, localPlayerId, isMyTurn, onInvalidTxP
       {hand.length === 0 ? (
         <div className="text-gray-600 text-sm text-center py-4">No cards in hand</div>
       ) : (
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-1.5 sm:gap-2 flex-wrap">
           {/* Transaction cards first (for publish block grouping) */}
           {transactionCards.map((card) => (
             <CardTile

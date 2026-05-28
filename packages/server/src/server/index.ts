@@ -4,7 +4,7 @@ import { RoomManager } from './rooms.js'
 import { ReconnectManager } from './reconnect.js'
 import { createMessageHandler } from './handlers.js'
 
-const PORT = 3001
+const PORT = parseInt(process.env['PORT'] ?? '3001', 10)
 
 const httpServer = createServer((_req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/plain' })

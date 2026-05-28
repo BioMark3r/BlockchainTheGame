@@ -101,6 +101,26 @@ npm test
 
 ---
 
+## 🚀 Deployment
+
+The server and client can be hosted separately.
+
+### Server (Railway)
+1. Connect your GitHub repo to [Railway](https://railway.app)
+2. Railway will detect `railway.json` and build using the server Dockerfile
+3. Set the `PORT` environment variable if needed (defaults to 3001)
+4. Note your deployed server URL (e.g. `wss://your-app.railway.app`)
+
+### Client (Vercel / Netlify / any static host)
+1. Set the environment variable `VITE_WS_URL=wss://your-server-url` before building
+2. Run `npm run build --workspace=packages/client`
+3. Deploy the `packages/client/dist/` folder
+
+### Local development
+Copy `.env.example` to `.env.local` in `packages/client/` and adjust as needed.
+
+---
+
 ## 🛠 Tech Stack
 
 - **React 18** — UI framework

@@ -1,0 +1,22 @@
+
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m663[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5173[22m/[39m
+[2m  [32m➜[39m  [1mNetwork[22m[2m: use [22m[1m--host[22m[2m to expose[22m
+[2m2:20:46 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css, /src/components/RoomLobby.tsx, /src/components/GameBoard.tsx, /src/components/PlayerHand.tsx[22m
+[2m2:20:57 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/RoomLobby.tsx[22m
+[2m2:21:13 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/RoomLobby.tsx, /src/index.css[22m
+[2m2:21:20 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
+[2m2:33:54 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/PlayerHand.tsx, /src/index.css[22m
+[2m2:34:08 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ChainView.tsx, /src/index.css[22m
+[2m2:34:11 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ChainView.tsx, /src/index.css[22m
+[2m2:34:22 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ChainView.tsx, /src/index.css[22m
+[2m2:34:25 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/GameBoard.tsx, /src/index.css[22m
+[2m2:35:20 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m2:35:34 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/CardTile.tsx, /src/index.css[22m
+[2m2:35:50 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/PlayerZone.tsx, /src/index.css[22m
+[2m2:36:05 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/GameBoard.tsx, /src/index.css[22m
+[2m2:36:22 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/RoomLobby.tsx, /src/index.css[22m
+[2m2:36:29 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/BlockCard.tsx, /src/index.css[22m
+[2m2:49:19 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/CardTile.tsx, /src/index.css[22m
+[2m2:49:24 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/PlayerZone.tsx, /src/index.css[22m

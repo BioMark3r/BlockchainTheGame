@@ -32,7 +32,7 @@ export default function PlayerZone({ player, isLocal, isCurrentTurn, localPlayer
           )}
         </div>
 
-        <div className="ml-auto flex items-center gap-4 text-xs text-gray-400">
+        <div className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400">
           <span>
             💰 <span className="text-white font-bold">{player.credits}</span> credits
           </span>
@@ -78,7 +78,7 @@ export default function PlayerZone({ player, isLocal, isCurrentTurn, localPlayer
           {Array.from({ length: player.hand.length }).map((_, i) => (
             <div
               key={i}
-              className="w-20 h-28 rounded-xl border-2 border-gray-700 bg-gray-800 flex items-center justify-center text-2xl opacity-40"
+              className="w-16 h-24 sm:w-20 sm:h-28 rounded-xl border-2 border-gray-700 bg-gray-800 flex items-center justify-center text-2xl opacity-40"
             >
               🤖
             </div>
@@ -90,7 +90,7 @@ export default function PlayerZone({ player, isLocal, isCurrentTurn, localPlayer
           {Array.from({ length: player.hand.length }).map((_, i) => (
             <div
               key={i}
-              className="w-20 h-28 rounded-xl border-2 border-gray-700 bg-gray-800 flex items-center justify-center text-gray-600 text-sm"
+              className="w-16 h-24 sm:w-20 sm:h-28 rounded-xl border-2 border-gray-700 bg-gray-800 flex items-center justify-center text-gray-600 text-sm"
             >
               🂠
             </div>

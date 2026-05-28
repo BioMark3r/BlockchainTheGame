@@ -9,8 +9,10 @@ type ServerMessage =
   | { type: 'WAITING_FOR_PLAYER' }
   | { type: 'ERROR';        message: string }
 
+const WS_URL = import.meta.env.VITE_WS_URL ?? 'ws://localhost:3001'
+
 export function connectWebSocket(action: 'create' | 'join', roomCode: string, vsCpu: boolean): WebSocket {
-  const ws = new WebSocket(`ws://localhost:3001`)
+  const ws = new WebSocket(WS_URL)
 
   ws.addEventListener('open', () => {
     useGameStore.getState().setWs(ws)

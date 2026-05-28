@@ -24,7 +24,7 @@ export default function GameLog() {
         📋 Game Log
       </h3>
 
-      <div className="max-h-32 overflow-y-auto flex flex-col gap-0.5 pr-1" style={{ scrollbarWidth: 'thin' }}>
+      <div className="max-h-24 sm:max-h-32 overflow-y-auto flex flex-col gap-0.5 pr-1" style={{ scrollbarWidth: 'thin' }}>
         {log.length === 0 && (
           <div className="text-gray-600 text-xs italic">No events yet…</div>
         )}

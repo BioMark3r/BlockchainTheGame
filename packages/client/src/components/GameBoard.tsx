@@ -45,13 +45,13 @@ export default function GameBoard({ onReturnToLobby }: Props) {
   )
 
   return (
-    <div className="min-h-screen flex flex-col p-4 gap-4 max-w-4xl mx-auto">
+    <div className="min-h-screen flex flex-col p-2 sm:p-4 gap-2 sm:gap-4 max-w-4xl mx-auto">
       {showHowToPlay && <HowToPlayModal onClose={() => setShowHowToPlay(false)} />}
 
       {/* Top bar */}
-      <div className="flex items-center justify-between bg-[#0a0e1a] border border-[#1e2d4a] rounded-xl px-5 py-3">
+      <div className="flex items-center justify-between bg-[#0a0e1a] border border-[#1e2d4a] rounded-xl px-3 py-2 sm:px-5 sm:py-3">
         <div className="flex items-center gap-3">
-          <span className="text-yellow-400 font-bold">⛓️ Blockchain: The Game</span>
+          <span className="text-sm sm:text-base text-yellow-400 font-bold">⛓️ Blockchain: The Game</span>
           <button onClick={() => setShowHowToPlay(true)} title="How to Play" className="text-gray-500 hover:text-gray-300 text-sm">❓</button>
           {chainSplit.active && (
             <span className="text-xs bg-orange-950/60 border border-orange-500/50 text-orange-300 rounded-full px-2 py-0.5">

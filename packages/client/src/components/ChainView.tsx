@@ -57,7 +57,7 @@ export default function ChainView({ chain, genesisCard, selectingForInvalidTx = 
   }, [chain.length])
 
   return (
-    <div className="bg-gray-900 border border-gray-700 rounded-2xl p-4">
+    <div className="min-w-0 bg-gray-900 border border-gray-700 rounded-2xl p-4">
       <h2 className="text-xs text-gray-400 uppercase tracking-widest mb-3 font-semibold">
         ⛓ The Chain — {chain.length} block{chain.length !== 1 ? 's' : ''}
       </h2>

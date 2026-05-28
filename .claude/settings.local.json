@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init *)",
+      "Bash(curl -s -X POST \"https://api.telegram.org/bot8060294358:AAEFnCkLUCt-wjui1wyDkkDvL0nq7fqHbyE/sendMessage\" --data-urlencode \"chat_id=5679123089\" --data-urlencode \"text=Blockchain: The Game - Team Lead connected. I will message you here for plan approvals and follow-up questions. Engine teammate is currently building game logic and unit tests.\")",
+      "Bash(npm install *)",
+      "PowerShell(Get-Command node, npm, npx -ErrorAction SilentlyContinue)",
+      "PowerShell($env:PATH; Write-Host \"---\"; Test-Path \"C:\\\\Program Files\\\\nodejs\\\\node.exe\"; Test-Path \"$env:APPDATA\\\\npm\\\\npm.cmd\")",
+      "PowerShell($env:PATH = [System.Environment]::GetEnvironmentVariable\\(\"PATH\", \"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"PATH\", \"User\"\\); node --version; npm --version)",
+      "mcp__Claude_Preview__preview_start",
+      "PowerShell($env:PATH = [System.Environment]::GetEnvironmentVariable\\(\"PATH\", \"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"PATH\", \"User\"\\); \\(Get-Command npx\\).Source)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "Read(//mnt/i/Blockchain_The_Game/packages/**)",
+      "Bash(npx vite *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173)"
+    ]
+  }
+}

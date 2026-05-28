@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "client",
+      "runtimeExecutable": "D:\\Program Files\\nodejs\\node.exe",
+      "runtimeArgs": ["D:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npx-cli.js", "--prefix", "I:\\Blockchain_The_Game\\packages\\client", "vite"],
+      "port": 5173
+    }
+  ]
+}
