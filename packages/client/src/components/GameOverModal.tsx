@@ -16,6 +16,14 @@ export default function GameOverModal({ gameState, localPlayerId, onPlayAgain }:
   const log = useGameStore((s) => s.gameLog)
   const playerNames = useGameStore((s) => s.playerNames)
   const stats = computeGameStats(log, gameState)
+  const send = useGameStore((s) => s.send)
+  const isRematching = useGameStore((s) => s.isRematching)
+  const setIsRematching = useGameStore((s) => s.setIsRematching)
+
+  function handleRematch() {
+    setIsRematching(true)
+    send({ type: 'REMATCH' })
+  }
 
   const winnerPlayer = players.find((p) => p.id === winner)
   const winnerLabel = winnerPlayer
@@ -116,12 +124,26 @@ export default function GameOverModal({ gameState, localPlayerId, onPlayAgain }:
           </table>
         </div>
 
-        <button
-          onClick={onPlayAgain}
-          className="w-full bg-yellow-400 hover:bg-yellow-300 text-gray-950 font-bold py-3 rounded-xl transition-colors"
-        >
-          Play Again
-        </button>
+        {isRematching ? (
+          <div className="text-center text-gray-400 text-sm animate-pulse">Setting up rematch…</div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {gameState.phase === 'ended' && (
+              <button
+                onClick={handleRematch}
+                className="w-full bg-yellow-400 hover:bg-yellow-300 text-gray-950 font-bold py-3 rounded-xl transition-colors"
+              >
+                🔄 Rematch
+              </button>
+            )}
+            <button
+              onClick={onPlayAgain}
+              className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-xl transition-colors"
+            >
+              🏠 Return to Lobby
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

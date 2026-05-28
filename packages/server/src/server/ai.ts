@@ -1,5 +1,5 @@
 import { applyAction } from '../../../../src/engine/index.js'
-import type { GameState, PlayerId, TurnAction } from '../../../../src/shared/types.js'
+import type { GameState, PlayerId, TurnAction, CpuDifficulty } from '../../../../src/shared/types.js'
 import { CardType as CT } from '../../../../src/shared/types.js'
 import type { Room } from './rooms.js'
 
@@ -7,7 +7,57 @@ import type { Room } from './rooms.js'
 // CPU action chooser
 // ---------------------------------------------------------------------------
 
-export function chooseAction(state: GameState, cpuPlayerId: PlayerId): TurnAction {
+export function chooseAction(state: GameState, cpuPlayerId: PlayerId, difficulty: CpuDifficulty = 'normal'): TurnAction {
+  if (difficulty === 'easy') return chooseActionEasy(state, cpuPlayerId)
+  if (difficulty === 'hard') return chooseActionHard(state, cpuPlayerId)
+  return chooseActionNormal(state, cpuPlayerId)
+}
+
+// ---------------------------------------------------------------------------
+// Easy: dumb AI — publish if possible, otherwise discard non-TX cards
+// ---------------------------------------------------------------------------
+
+function chooseActionEasy(state: GameState, cpuPlayerId: PlayerId): TurnAction {
+  const playerIdx = state.players.findIndex((p) => p.id === cpuPlayerId)
+  if (playerIdx === -1) throw new Error(`CPU player ${cpuPlayerId} not found in state`)
+  const myState = state.players[playerIdx]!
+  const hand = myState.hand
+
+  const txCards = hand.filter((c) => c.type === CT.TRANSACTION)
+
+  // 1. Publish a block if possible
+  if (txCards.length >= 3) {
+    return {
+      type: 'PUBLISH_BLOCK',
+      playerId: cpuPlayerId,
+      cardIds: [txCards[0]!.id, txCards[1]!.id, txCards[2]!.id],
+    }
+  }
+
+  // 2. Discard all non-TX cards and redraw
+  const toDiscard = hand.filter((c) => c.type !== CT.TRANSACTION)
+  if (toDiscard.length > 0) {
+    return {
+      type: 'DISCARD_REDRAW',
+      playerId: cpuPlayerId,
+      cardIdsToDiscard: toDiscard.map((c) => c.id),
+    }
+  }
+
+  // All TX cards, fewer than 3 — discard one to keep drawing
+  const discardOne = hand[0]!
+  return {
+    type: 'DISCARD_REDRAW',
+    playerId: cpuPlayerId,
+    cardIdsToDiscard: [discardOne.id],
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Normal: original smart AI (unchanged logic)
+// ---------------------------------------------------------------------------
+
+function chooseActionNormal(state: GameState, cpuPlayerId: PlayerId): TurnAction {
   const playerIdx = state.players.findIndex((p) => p.id === cpuPlayerId)
   if (playerIdx === -1) throw new Error(`CPU player ${cpuPlayerId} not found in state`)
   const myState = state.players[playerIdx]!
@@ -19,7 +69,6 @@ export function chooseAction(state: GameState, cpuPlayerId: PlayerId): TurnActio
   const myValidators = myState.validators.length
   const oppValidators = oppState.validators.length
   const txCards = hand.filter((c) => c.type === CT.TRANSACTION)
-  // Rough turns left: cards remaining in draw pile + tx cards in hand (each publish costs 3)
   const turnsLeft = myState.drawPile.length + Math.floor(txCards.length / 3)
 
   // --- Card lookups ---
@@ -123,12 +172,129 @@ export function chooseAction(state: GameState, cpuPlayerId: PlayerId): TurnActio
 }
 
 // ---------------------------------------------------------------------------
+// Hard: aggressive AI with lower thresholds and no TX discards
+// ---------------------------------------------------------------------------
+
+function chooseActionHard(state: GameState, cpuPlayerId: PlayerId): TurnAction {
+  const playerIdx = state.players.findIndex((p) => p.id === cpuPlayerId)
+  if (playerIdx === -1) throw new Error(`CPU player ${cpuPlayerId} not found in state`)
+  const myState = state.players[playerIdx]!
+  const oppState = state.players[playerIdx === 0 ? 1 : 0]!
+  const hand = myState.hand
+
+  // --- Compute context ---
+  const creditDiff = myState.credits - oppState.credits
+  const myValidators = myState.validators.length
+  const oppValidators = oppState.validators.length
+  const txCards = hand.filter((c) => c.type === CT.TRANSACTION)
+  const turnsLeft = myState.drawPile.length + Math.floor(txCards.length / 3)
+
+  // --- Card lookups ---
+  const forkCard = hand.find((c) => c.type === CT.FORK)
+  const validatorCard = hand.find((c) => c.type === CT.VALIDATOR)
+  const vrCard = hand.find((c) => c.type === CT.VALIDATOR_REDUNDANCY)
+  const csCard = hand.find((c) => c.type === CT.CHAIN_SPLIT)
+  const itCard = hand.find((c) => c.type === CT.INVALID_TRANSACTION)
+  const crCard = hand.find((c) => c.type === CT.CHAIN_REORG)
+  const reshuffleCard = hand.find((c) => c.type === CT.RESHUFFLE)
+
+  // 1. PUBLISH_BLOCK — highest priority when possible
+  if (txCards.length >= 3) {
+    return {
+      type: 'PUBLISH_BLOCK',
+      playerId: cpuPlayerId,
+      cardIds: [txCards[0]!.id, txCards[1]!.id, txCards[2]!.id],
+    }
+  }
+
+  // 2. FORK — offensive: lower threshold than normal (>= 3 instead of >= 5)
+  if (forkCard && creditDiff >= 3 && turnsLeft <= 8) {
+    return { type: 'PLAY_CARD', playerId: cpuPlayerId, cardId: forkCard.id }
+  }
+
+  // 3. INVALID_TRANSACTION — aggressive: any time opponent has ANY blocks
+  if (itCard) {
+    const anyOppBlock = state.chain.find((b) => b.publishedBy !== cpuPlayerId)
+    if (anyOppBlock) {
+      return {
+        type: 'PLAY_CARD',
+        playerId: cpuPlayerId,
+        cardId: itCard.id,
+        targetBlockId: anyOppBlock.id,
+      }
+    }
+  }
+
+  // 4. CHAIN_REORG — lower threshold: opponent has 3+ validators (vs normal's 5)
+  if (crCard && oppValidators >= 3) {
+    return { type: 'PLAY_CARD', playerId: cpuPlayerId, cardId: crCard.id }
+  }
+
+  // 5. VALIDATOR — build up to keep pace with opponent (cap at 5 total, stay within +2 of opp)
+  if (validatorCard && myValidators < oppValidators + 2 && myValidators < 5) {
+    return { type: 'PLAY_CARD', playerId: cpuPlayerId, cardId: validatorCard.id }
+  }
+
+  // 6. VALIDATOR_REDUNDANCY — only worth playing once validators are in place
+  if (vrCard && myValidators >= 2) {
+    return { type: 'PLAY_CARD', playerId: cpuPlayerId, cardId: vrCard.id }
+  }
+
+  // 7. CHAIN_SPLIT — only if CPU has the validator advantage
+  if (csCard && myValidators > oppValidators) {
+    return { type: 'PLAY_CARD', playerId: cpuPlayerId, cardId: csCard.id }
+  }
+
+  // 8. RESHUFFLE — when deck is empty or nearly empty and discard is large enough
+  if (
+    reshuffleCard &&
+    myState.discardPile.length > 0 &&
+    (myState.drawPile.length === 0 || (myState.drawPile.length <= 3 && myState.discardPile.length >= 5))
+  ) {
+    return { type: 'PLAY_CARD', playerId: cpuPlayerId, cardId: reshuffleCard.id }
+  }
+
+  // 9. FORK — defensive: play to cut losses when significantly behind
+  if (forkCard && creditDiff <= -8) {
+    return { type: 'PLAY_CARD', playerId: cpuPlayerId, cardId: forkCard.id }
+  }
+
+  // 10. DISCARD_REDRAW — never discard TX cards (hard AI keeps them)
+  const toDiscard = hand.filter((c) => c.type !== CT.TRANSACTION)
+  if (toDiscard.length > 0) {
+    return {
+      type: 'DISCARD_REDRAW',
+      playerId: cpuPlayerId,
+      cardIdsToDiscard: toDiscard.map((c) => c.id),
+    }
+  }
+
+  // All cards are TRANSACTION but fewer than 3 — keep 2, discard the rest to draw toward a set
+  if (hand.length > 2) {
+    const toDiscardTx = hand.slice(2)
+    return {
+      type: 'DISCARD_REDRAW',
+      playerId: cpuPlayerId,
+      cardIdsToDiscard: toDiscardTx.map((c) => c.id),
+    }
+  }
+
+  // Only 1–2 TX cards — discard one to keep drawing
+  const discardOne = hand[0]!
+  return {
+    type: 'DISCARD_REDRAW',
+    playerId: cpuPlayerId,
+    cardIdsToDiscard: [discardOne.id],
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Trigger CPU turn (with fallback on engine rejection)
 // ---------------------------------------------------------------------------
 
 type BroadcastFn = (room: Room, state: GameState) => void
 
-export function triggerCpuTurn(room: Room, broadcast: BroadcastFn): void {
+export function triggerCpuTurn(room: Room, broadcast: BroadcastFn, difficulty: CpuDifficulty = 'normal'): void {
   if (!room.gameState || room.gameState.phase !== 'playing') return
 
   const cpuPlayer = room.players.find((p) => p?.isCpu)
@@ -137,7 +303,7 @@ export function triggerCpuTurn(room: Room, broadcast: BroadcastFn): void {
 
   if (room.gameState.currentTurn !== cpuPlayerId) return
 
-  const action = chooseAction(room.gameState, cpuPlayerId)
+  const action = chooseAction(room.gameState, cpuPlayerId, difficulty)
   const result = applyAction(room.gameState, action)
 
   if (result.success) {
@@ -182,6 +348,6 @@ export function triggerCpuTurn(room: Room, broadcast: BroadcastFn): void {
   // (normally shouldn't be, but guard for consecutive CPU moves e.g. after fork effects)
   const latestState = room.gameState
   if (latestState.phase === 'playing' && latestState.currentTurn === cpuPlayerId) {
-    setTimeout(() => triggerCpuTurn(room, broadcast), 500)
+    setTimeout(() => triggerCpuTurn(room, broadcast, difficulty), 500)
   }
 }

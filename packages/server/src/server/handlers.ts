@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto'
 import type { WebSocket } from 'ws'
 import { createGame, applyAction } from '../../../../src/engine/index.js'
-import type { GameState, TurnAction } from '../../../../src/shared/types.js'
+import type { GameState, TurnAction, CpuDifficulty } from '../../../../src/shared/types.js'
 import type { Room, RoomPlayer } from './rooms.js'
 import { RoomManager } from './rooms.js'
 import { ReconnectManager } from './reconnect.js'
@@ -11,13 +11,14 @@ import { triggerCpuTurn } from './ai.js'
 // Message shapes (incoming)
 // ---------------------------------------------------------------------------
 
-interface CreateRoomMsg { type: 'CREATE_ROOM'; vsComp: boolean; displayName?: string }
+interface CreateRoomMsg { type: 'CREATE_ROOM'; vsComp: boolean; difficulty?: CpuDifficulty; displayName?: string }
 interface JoinRoomMsg   { type: 'JOIN_ROOM';   roomCode: string; displayName?: string }
 interface RejoinMsg     { type: 'REJOIN';       roomCode: string; playerToken: string }
 interface ActionMsg     { type: 'ACTION';       action: TurnAction }
 interface ConcedeMsg    { type: 'CONCEDE' }
+interface RematchMsg    { type: 'REMATCH' }
 
-type IncomingMsg = CreateRoomMsg | JoinRoomMsg | RejoinMsg | ActionMsg | ConcedeMsg
+type IncomingMsg = CreateRoomMsg | JoinRoomMsg | RejoinMsg | ActionMsg | ConcedeMsg | RematchMsg
 
 // ---------------------------------------------------------------------------
 // Turn timer
@@ -111,7 +112,7 @@ function startGame(room: Room, rooms: RoomManager, reconnect: ReconnectManager):
   // If it's the CPU's first turn, kick off its loop; otherwise start human turn timer
   if (p2.isCpu && state.currentTurn === p2.playerId) {
     setTimeout(() => {
-      triggerCpuTurn(room, broadcastState)
+      triggerCpuTurn(room, broadcastState, room.cpuDifficulty)
       if (room.gameState && room.gameState.phase === 'playing') {
         startTurnTimer(room)
       }
@@ -152,6 +153,7 @@ export function handleCreateRoom(
   // Attach the creator's WebSocket and set display name
   room.players[0]!.ws = ws
   room.players[0]!.displayName = msg.displayName ?? 'Player 1'
+  room.cpuDifficulty = msg.difficulty ?? 'normal'
 
   send(ws, {
     type: 'ROOM_CREATED',
@@ -290,7 +292,7 @@ export function handlePlayerAction(
     const cpuPlayer = room.players.find((p) => p?.isCpu)
     if (cpuPlayer && result.state.currentTurn === cpuPlayer.playerId) {
       setTimeout(() => {
-        triggerCpuTurn(room, broadcastState)
+        triggerCpuTurn(room, broadcastState, room.cpuDifficulty)
         // After CPU turn, start timer for next human turn (if game still playing)
         if (room.gameState && room.gameState.phase === 'playing') {
           startTurnTimer(room)
@@ -362,6 +364,68 @@ export function handleConcede(
   }, 60_000)
 }
 
+export function handleRematch(
+  ws: WebSocket,
+  playerToken: string,
+  rooms: RoomManager,
+  reconnect: ReconnectManager,
+): void {
+  // Find the old room by token
+  let foundRoom: Room | undefined
+  let foundPlayer: RoomPlayer | undefined
+
+  for (const [, room] of rooms.allRooms()) {
+    for (const p of room.players) {
+      if (p && p.playerToken === playerToken) {
+        foundRoom = room
+        foundPlayer = p
+        break
+      }
+    }
+    if (foundRoom) break
+  }
+
+  if (!foundRoom || !foundPlayer) {
+    sendError(ws, 'Room not found for rematch')
+    return
+  }
+
+  const oldRoom = foundRoom
+  const isCpu = oldRoom.cpuSlot
+  const p1DisplayName = oldRoom.players[0]?.displayName ?? 'Player 1'
+
+  // Create a fresh room
+  const { room: newRoom, playerToken: newToken } = rooms.createRoom(isCpu)
+  newRoom.players[0]!.ws = ws
+  newRoom.players[0]!.displayName = p1DisplayName
+
+  send(ws, { type: 'REMATCH_CREATED', roomCode: newRoom.code, playerToken: newToken })
+
+  if (isCpu) {
+    fillCpuAndStart(newRoom, rooms, reconnect)
+  } else {
+    // Notify the other human player in the old room so they can auto-join
+    const otherPlayer = oldRoom.players.find((p) => p && p.playerToken !== playerToken)
+    if (otherPlayer && !otherPlayer.isCpu && otherPlayer.ws) {
+      send(otherPlayer.ws, { type: 'REMATCH_INVITE', roomCode: newRoom.code })
+    }
+
+    // Set up waiting timers for the new room (same as normal human vs human create)
+    newRoom.waitingTimer = setInterval(() => {
+      send(ws, { type: 'WAITING_FOR_PLAYER' })
+    }, WAITING_INTERVAL_MS)
+
+    newRoom.autoCpuTimer = setTimeout(() => {
+      if (newRoom.waitingTimer !== null) {
+        clearInterval(newRoom.waitingTimer)
+        newRoom.waitingTimer = null
+      }
+      newRoom.autoCpuTimer = null
+      fillCpuAndStart(newRoom, rooms, reconnect)
+    }, AUTO_CPU_DELAY_MS)
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Top-level message dispatcher
 // Attached per-connection in index.ts
@@ -428,6 +492,21 @@ export function createMessageHandler(
           return
         }
         handleConcede(ws, myToken, rooms, reconnect)
+        break
+      }
+      case 'REMATCH': {
+        if (!myToken) {
+          sendError(ws, 'Not authenticated — send CREATE_ROOM or JOIN_ROOM first')
+          return
+        }
+        handleRematch(ws, myToken, rooms, reconnect)
+        // Update myToken to the new room's token
+        for (const [, room] of rooms.allRooms()) {
+          if (room.players[0]?.ws === ws) {
+            myToken = room.players[0].playerToken
+            break
+          }
+        }
         break
       }
       default: {

@@ -1,13 +1,15 @@
 import { useGameStore } from '../store/gameStore'
-import type { PlayerId, GameState } from '@shared/types'
+import type { PlayerId, GameState, CpuDifficulty } from '@shared/types'
 
 type ServerMessage =
-  | { type: 'ROOM_CREATED'; roomCode: string; playerToken: string; playerId: PlayerId }
-  | { type: 'ROOM_JOINED';  roomCode: string; playerToken: string; playerId: PlayerId }
-  | { type: 'GAME_STARTED'; state: GameState; displayNames?: Record<string, string> }
-  | { type: 'GAME_STATE';   state: GameState; displayNames?: Record<string, string> }
+  | { type: 'ROOM_CREATED';    roomCode: string; playerToken: string; playerId: PlayerId }
+  | { type: 'ROOM_JOINED';     roomCode: string; playerToken: string; playerId: PlayerId }
+  | { type: 'GAME_STARTED';    state: GameState; displayNames?: Record<string, string> }
+  | { type: 'GAME_STATE';      state: GameState; displayNames?: Record<string, string> }
   | { type: 'WAITING_FOR_PLAYER' }
-  | { type: 'ERROR';        message: string }
+  | { type: 'ERROR';           message: string }
+  | { type: 'REMATCH_CREATED'; roomCode: string; playerToken: string }
+  | { type: 'REMATCH_INVITE';  roomCode: string }
 
 const WS_URL = import.meta.env.VITE_WS_URL ?? 'ws://localhost:3001'
 
@@ -37,7 +39,7 @@ export function clearReconnectStorage(): void {
 // Main connection
 // ---------------------------------------------------------------------------
 
-export function connectWebSocket(action: 'create' | 'join', roomCode: string, vsCpu: boolean, playerDisplayName?: string): WebSocket {
+export function connectWebSocket(action: 'create' | 'join', roomCode: string, vsCpu: boolean, playerDisplayName?: string, difficulty?: CpuDifficulty): WebSocket {
   const ws = new WebSocket(WS_URL)
 
   ws.addEventListener('open', () => {
@@ -45,7 +47,7 @@ export function connectWebSocket(action: 'create' | 'join', roomCode: string, vs
     useGameStore.getState().setError(null)
 
     if (action === 'create') {
-      ws.send(JSON.stringify({ type: 'CREATE_ROOM', vsComp: vsCpu, displayName: playerDisplayName }))
+      ws.send(JSON.stringify({ type: 'CREATE_ROOM', vsComp: vsCpu, difficulty, displayName: playerDisplayName }))
     } else {
       ws.send(JSON.stringify({ type: 'JOIN_ROOM', roomCode, displayName: playerDisplayName }))
     }
@@ -78,6 +80,7 @@ export function connectWebSocket(action: 'create' | 'join', roomCode: string, vs
       case 'GAME_STARTED':
         store.clearLog()
         store.setGameState(msg.state)
+        store.setIsRematching(false)
         if (msg.displayNames) store.setPlayerNames(msg.displayNames)
         break
       case 'GAME_STATE':
@@ -89,6 +92,14 @@ export function connectWebSocket(action: 'create' | 'join', roomCode: string, vs
         break
       case 'ERROR':
         store.setError(msg.message)
+        break
+      case 'REMATCH_CREATED':
+        useGameStore.setState({ roomCode: msg.roomCode, playerToken: msg.playerToken, gameState: null, gameLog: [], isRematching: false })
+        saveReconnectInfo(msg.roomCode, msg.playerToken, store.localPlayerId ?? 'player1')
+        break
+      case 'REMATCH_INVITE':
+        // Player 2 auto-joins the new room
+        ws.send(JSON.stringify({ type: 'JOIN_ROOM', roomCode: msg.roomCode }))
         break
     }
   })

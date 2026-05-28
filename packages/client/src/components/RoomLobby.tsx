@@ -2,10 +2,12 @@ import React, { useState } from 'react'
 import { connectWebSocket } from '../ws/client'
 import { useGameStore } from '../store/gameStore'
 import HowToPlayModal from './HowToPlayModal'
+import type { CpuDifficulty } from '@shared/types'
 
 export default function RoomLobby() {
   const [joinCode, setJoinCode] = useState('')
   const [vsCpu, setVsCpu] = useState(false)
+  const [difficulty, setDifficulty] = useState<CpuDifficulty>('normal')
   const [showHowToPlay, setShowHowToPlay] = useState(false)
   const error = useGameStore((s) => s.error)
   const roomCode = useGameStore((s) => s.roomCode)
@@ -15,7 +17,7 @@ export default function RoomLobby() {
 
   function handleCreate() {
     clearError()
-    connectWebSocket('create', '', vsCpu, displayName.trim() || 'Player 1')
+    connectWebSocket('create', '', vsCpu, displayName.trim() || 'Player 1', difficulty)
   }
 
   function handleJoin() {
@@ -82,6 +84,23 @@ export default function RoomLobby() {
                   Play vs CPU 🤖
                 </label>
               </div>
+              {vsCpu && (
+                <div className="flex gap-2 mt-2">
+                  {(['easy', 'normal', 'hard'] as const).map((d) => (
+                    <button
+                      key={d}
+                      onClick={() => setDifficulty(d)}
+                      className={`flex-1 py-1.5 rounded-lg text-xs font-bold capitalize transition-colors ${
+                        difficulty === d
+                          ? 'bg-yellow-400 text-gray-900'
+                          : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                      }`}
+                    >
+                      {d === 'easy' ? '🟢 Easy' : d === 'normal' ? '🟡 Normal' : '🔴 Hard'}
+                    </button>
+                  ))}
+                </div>
+              )}
               <button
                 onClick={handleCreate}
                 className="w-full bg-yellow-400 hover:bg-yellow-300 text-gray-950 font-bold py-3 rounded-xl transition-colors"

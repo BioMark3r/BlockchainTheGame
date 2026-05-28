@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto'
 import type { WebSocket } from 'ws'
-import type { GameState, PlayerId } from '../../../../src/shared/types.js'
+import type { GameState, PlayerId, CpuDifficulty } from '../../../../src/shared/types.js'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -26,6 +26,8 @@ export interface Room {
   autoCpuTimer: ReturnType<typeof setTimeout> | null
   /** Timer that auto-skips the active player's turn after 60s */
   turnTimer: ReturnType<typeof setTimeout> | null
+  /** CPU difficulty level */
+  cpuDifficulty: CpuDifficulty
 }
 
 // ---------------------------------------------------------------------------
@@ -67,6 +69,7 @@ export class RoomManager {
       waitingTimer: null,
       autoCpuTimer: null,
       turnTimer: null,
+      cpuDifficulty: 'normal',
     }
 
     this.rooms.set(code, room)

@@ -24,6 +24,7 @@ interface GameStore {
   error: string | null
   gameLog: LogEntry[]
   isReconnecting: boolean
+  isRematching: boolean
   displayName: string
   playerNames: Record<string, string>
 
@@ -34,6 +35,7 @@ interface GameStore {
   setWs: (ws: WebSocket | null) => void
   setError: (msg: string | null) => void
   setIsReconnecting: (v: boolean) => void
+  setIsRematching: (v: boolean) => void
   send: (msg: unknown) => void
   clearError: () => void
   clearLog: () => void
@@ -50,6 +52,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   error: null,
   gameLog: [],
   isReconnecting: false,
+  isRematching: false,
   displayName: '',
   playerNames: {},
 
@@ -67,6 +70,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setWs: (ws) => set({ ws }),
   setError: (msg) => set({ error: msg }),
   setIsReconnecting: (v) => set({ isReconnecting: v }),
+  setIsRematching: (v) => set({ isRematching: v }),
   clearError: () => set({ error: null }),
   clearLog: () => set({ gameLog: [] }),
   setDisplayName: (name) => set({ displayName: name }),

@@ -1,3 +1,5 @@
+export type CpuDifficulty = 'easy' | 'normal' | 'hard'
+
 export enum CardType {
   GENESIS = 'GENESIS',
   VALIDATOR = 'VALIDATOR',
