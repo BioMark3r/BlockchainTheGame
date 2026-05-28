@@ -1,6 +1,7 @@
 import React from 'react'
 import type { PlayerState, PlayerId } from '@shared/types'
 import PlayerHand from './PlayerHand'
+import CardBack from './CardBack'
 import { displayName } from '../utils/display'
 import { useGameStore } from '../store/gameStore'
 
@@ -78,24 +79,14 @@ export default function PlayerZone({ player, isLocal, isCurrentTurn, localPlayer
       ) : player.isCpu ? (
         <div className="flex gap-2">
           {Array.from({ length: player.hand.length }).map((_, i) => (
-            <div
-              key={i}
-              className="w-16 h-24 sm:w-20 sm:h-28 rounded-xl border-2 border-gray-700 bg-gray-800 flex items-center justify-center text-2xl opacity-40"
-            >
-              🤖
-            </div>
+            <CardBack key={i} />
           ))}
         </div>
       ) : (
         /* Opponent human — show face-down cards */
         <div className="flex gap-2">
           {Array.from({ length: player.hand.length }).map((_, i) => (
-            <div
-              key={i}
-              className="w-16 h-24 sm:w-20 sm:h-28 rounded-xl border-2 border-gray-700 bg-gray-800 flex items-center justify-center text-gray-600 text-sm"
-            >
-              🂠
-            </div>
+            <CardBack key={i} />
           ))}
         </div>
       )}

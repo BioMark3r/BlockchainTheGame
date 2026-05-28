@@ -1,13 +1,19 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { connectWebSocket } from '../ws/client'
 import { useGameStore } from '../store/gameStore'
 import HowToPlayModal from './HowToPlayModal'
 import type { CpuDifficulty } from '@shared/types'
+import { loadScoreboard, clearScoreboard } from '../utils/scoreboard'
 
 export default function RoomLobby() {
   const [joinCode, setJoinCode] = useState('')
   const [vsCpu, setVsCpu] = useState(false)
   const [difficulty, setDifficulty] = useState<CpuDifficulty>('normal')
+  const [board, setBoard] = useState(() => loadScoreboard())
+
+  useEffect(() => {
+    setBoard(loadScoreboard())
+  }, [])
   const [showHowToPlay, setShowHowToPlay] = useState(false)
   const error = useGameStore((s) => s.error)
   const roomCode = useGameStore((s) => s.roomCode)
@@ -133,6 +139,35 @@ export default function RoomLobby() {
                 Join
               </button>
             </div>
+
+            {board.gamesPlayed > 0 && (
+              <div className="mt-6 pt-4 border-t border-gray-800">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-gray-500 uppercase tracking-widest">Your Record</span>
+                  <button
+                    onClick={() => { clearScoreboard(); setBoard(loadScoreboard()) }}
+                    className="text-[10px] text-gray-600 hover:text-gray-400 underline"
+                  >
+                    Reset
+                  </button>
+                </div>
+                <div className="flex gap-3 text-center">
+                  <div className="flex-1 bg-green-950/40 border border-green-800/50 rounded-xl py-2">
+                    <div className="text-lg font-bold text-green-400">{board.wins}</div>
+                    <div className="text-[10px] text-gray-500 uppercase tracking-wide">Wins</div>
+                  </div>
+                  <div className="flex-1 bg-red-950/40 border border-red-800/50 rounded-xl py-2">
+                    <div className="text-lg font-bold text-red-400">{board.losses}</div>
+                    <div className="text-[10px] text-gray-500 uppercase tracking-wide">Losses</div>
+                  </div>
+                  <div className="flex-1 bg-gray-800/60 border border-gray-700/50 rounded-xl py-2">
+                    <div className="text-lg font-bold text-gray-400">{board.draws}</div>
+                    <div className="text-[10px] text-gray-500 uppercase tracking-wide">Draws</div>
+                  </div>
+                </div>
+                <div className="text-center text-[10px] text-gray-600 mt-1">{board.gamesPlayed} games played</div>
+              </div>
+            )}
           </>
         )}
       </div>

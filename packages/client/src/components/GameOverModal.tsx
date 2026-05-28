@@ -1,8 +1,9 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import type { GameState, PlayerId } from '@shared/types'
 import { useGameStore } from '../store/gameStore'
 import { computeGameStats, type PlayerStats } from '../utils/gameStats'
 import { displayName } from '../utils/display'
+import { recordResult } from '../utils/scoreboard'
 
 interface Props {
   gameState: GameState
@@ -19,6 +20,10 @@ export default function GameOverModal({ gameState, localPlayerId, onPlayAgain }:
   const send = useGameStore((s) => s.send)
   const isRematching = useGameStore((s) => s.isRematching)
   const setIsRematching = useGameStore((s) => s.setIsRematching)
+
+  useEffect(() => {
+    recordResult(localPlayerId, gameState.winner)
+  }, [])
 
   function handleRematch() {
     setIsRematching(true)
