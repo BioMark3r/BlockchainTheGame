@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
 import { connectWebSocket } from '../ws/client'
 import { useGameStore } from '../store/gameStore'
+import HowToPlayModal from './HowToPlayModal'
 
 export default function RoomLobby() {
   const [joinCode, setJoinCode] = useState('')
   const [vsCpu, setVsCpu] = useState(false)
+  const [showHowToPlay, setShowHowToPlay] = useState(false)
   const error = useGameStore((s) => s.error)
   const roomCode = useGameStore((s) => s.roomCode)
   const clearError = useGameStore((s) => s.clearError)
@@ -22,13 +24,19 @@ export default function RoomLobby() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#060910]">
+      {showHowToPlay && <HowToPlayModal onClose={() => setShowHowToPlay(false)} />}
       <div className="bg-[#0a0e1a] border border-[#1e2d4a] rounded-2xl p-8 w-full max-w-md shadow-2xl">
         <h1 className="text-3xl font-bold text-center mb-2 text-yellow-400 drop-shadow-[0_0_8px_rgba(255,230,0,0.6)] tracking-tight">
           ⛓️ Blockchain: The Game
         </h1>
-        <p className="text-center text-gray-400 text-sm mb-8">
+        <p className="text-center text-gray-400 text-sm mb-2">
           Build the longest chain. Earn the most credits.
         </p>
+        <div className="text-center mb-6">
+          <button onClick={() => setShowHowToPlay(true)} className="text-xs text-blue-400 hover:text-blue-300 underline">
+            ❓ How to Play
+          </button>
+        </div>
 
         {error && (
           <div className="mb-4 bg-red-900/60 border border-red-600 text-red-300 rounded-lg px-4 py-2 text-sm">

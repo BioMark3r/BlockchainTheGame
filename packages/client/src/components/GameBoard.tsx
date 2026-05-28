@@ -4,6 +4,7 @@ import ChainView from './ChainView'
 import PlayerZone from './PlayerZone'
 import GameOverModal from './GameOverModal'
 import GameLog from './GameLog'
+import HowToPlayModal from './HowToPlayModal'
 import type { PlayerState } from '@shared/types'
 import { displayName } from '../utils/display'
 
@@ -18,6 +19,7 @@ export default function GameBoard({ onReturnToLobby }: Props) {
   const error = useGameStore((s) => s.error)
   const [invalidTxCardId, setInvalidTxCardId] = useState<string | null>(null)
   const [confirmingConcede, setConfirmingConcede] = useState(false)
+  const [showHowToPlay, setShowHowToPlay] = useState(false)
 
   if (!gameState || !localPlayerId) {
     return (
@@ -44,10 +46,13 @@ export default function GameBoard({ onReturnToLobby }: Props) {
 
   return (
     <div className="min-h-screen flex flex-col p-4 gap-4 max-w-4xl mx-auto">
+      {showHowToPlay && <HowToPlayModal onClose={() => setShowHowToPlay(false)} />}
+
       {/* Top bar */}
       <div className="flex items-center justify-between bg-[#0a0e1a] border border-[#1e2d4a] rounded-xl px-5 py-3">
         <div className="flex items-center gap-3">
           <span className="text-yellow-400 font-bold">⛓️ Blockchain: The Game</span>
+          <button onClick={() => setShowHowToPlay(true)} title="How to Play" className="text-gray-500 hover:text-gray-300 text-sm">❓</button>
           {chainSplit.active && (
             <span className="text-xs bg-orange-950/60 border border-orange-500/50 text-orange-300 rounded-full px-2 py-0.5">
               🔱 Chain Split Active
