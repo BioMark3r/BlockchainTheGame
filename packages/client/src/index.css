@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --neon-cyan: #00f5ff;
+  --neon-yellow: #ffe600;
+  --neon-green: #00ff88;
+  --neon-red: #ff2d55;
+  --panel-bg: #0a0e1a;
+  --panel-border: #1e2d4a;
+}
+
+@layer base {
+  body {
+    @apply text-gray-100 font-mono;
+    background-color: #060910;
+    background-image:
+      radial-gradient(ellipse at 20% 50%, rgba(0,80,120,0.15) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(0,40,100,0.12) 0%, transparent 50%);
+    min-height: 100vh;
+  }
+}
+
+@layer utilities {
+  .chain-reorg-flash {
+    animation: reorg-flash 0.6s ease-in-out;
+  }
+}
+
+@keyframes reorg-flash {
+  0%   { background-color: theme('colors.red.700'); }
+  50%  { background-color: theme('colors.red.500'); }
+  100% { background-color: transparent; }
+}
+
+@keyframes card-draw {
+  from { opacity: 0; transform: translateY(16px) scale(0.92); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+.animate-card-draw {
+  animation: card-draw 0.22s ease-out both;
+}
+
+@keyframes block-pop {
+  0%   { opacity: 0; transform: scale(0.7); }
+  70%  { transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.animate-block-pop {
+  animation: block-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes card-play {
+  0%   { filter: brightness(1); }
+  40%  { filter: brightness(2.5) saturate(0.5); }
+  100% { filter: brightness(1); }
+}
+.animate-card-play {
+  animation: card-play 0.25s ease-in-out;
+}
