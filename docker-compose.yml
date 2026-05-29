@@ -26,11 +26,12 @@ services:
     build:
       context: .
       dockerfile: packages/client/Dockerfile
-      args:
-        # VITE_WS_URL is baked into the JS bundle at build time.
-        # Change to your public hostname/IP when deploying remotely, e.g.:
-        #   VITE_WS_URL: "ws://your-server-ip:3001"
-        VITE_WS_URL: "ws://localhost:3001"
+      # VITE_WS_URL is optional. When omitted, the client automatically connects
+      # to the same hostname it was served from on port 3001, which works for
+      # local and remote access without rebuilding.
+      # Override only if your WebSocket server is on a different host:
+      #   args:
+      #     VITE_WS_URL: "wss://your-server-domain.com"
     ports:
       - "80:80"
     depends_on:

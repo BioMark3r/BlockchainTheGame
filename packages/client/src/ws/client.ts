@@ -11,7 +11,11 @@ type ServerMessage =
   | { type: 'REMATCH_CREATED'; roomCode: string; playerToken: string }
   | { type: 'REMATCH_INVITE';  roomCode: string }
 
-const WS_URL = import.meta.env.VITE_WS_URL ?? 'ws://localhost:3001'
+// If VITE_WS_URL is set at build time, use it.
+// Otherwise derive the URL from the page's own hostname so the client works
+// on any machine without needing to rebuild (e.g. Docker, remote servers).
+const _proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+const WS_URL = import.meta.env.VITE_WS_URL ?? `${_proto}//${window.location.hostname}:3001`
 
 // ---------------------------------------------------------------------------
 // sessionStorage helpers
