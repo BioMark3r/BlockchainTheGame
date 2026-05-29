@@ -105,9 +105,11 @@ function applyChainSplit(state: GameState, action: PlayCardAction): GameState {
 
 function applyValidatorRedundancy(state: GameState, action: PlayCardAction): GameState {
   const stateAfterConsume = consumeCard(state, action.playerId, action.cardId)
+  // Cap at 1 — not stackable. Playing a second VR while one is already active is a no-op
+  // for the count (the card is still consumed). Resets to 0 automatically after the next block.
   return {
     ...stateAfterConsume,
-    validatorRedundancyCount: stateAfterConsume.validatorRedundancyCount + 1,
+    validatorRedundancyCount: stateAfterConsume.validatorRedundancyCount === 0 ? 1 : stateAfterConsume.validatorRedundancyCount,
   }
 }
 

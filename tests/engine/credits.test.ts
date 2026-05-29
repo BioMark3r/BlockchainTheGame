@@ -36,17 +36,18 @@ describe('calculateBlockCredits', () => {
     expect(credits.get('player2')).toBe(2)
   })
 
-  it('validator redundancy x2 gives 4x credits', () => {
+  it('validator redundancy x1 (active) gives 2x credits and resets after publish', () => {
+    // VR is single-use (count capped at 1) — confirmed via applyValidatorRedundancy
     const state = makeState({
-      validatorRedundancyCount: 2,
+      validatorRedundancyCount: 1,
       players: [
         makePlayer('player1', { validators: [makeCard(CardType.VALIDATOR)] }),
         makePlayer('player2', { validators: [makeCard(CardType.VALIDATOR)] }),
       ],
     })
     const credits = calculateBlockCredits(state, 'player1')
-    expect(credits.get('player1')).toBe(4) // 1 validator * 2^2 = 4
-    expect(credits.get('player2')).toBe(4)
+    expect(credits.get('player1')).toBe(2) // 1 validator * 2^1 = 2
+    expect(credits.get('player2')).toBe(2)
   })
 
   it('chain split: only publisher earns credits', () => {
@@ -76,23 +77,23 @@ describe('calculateBlockCredits', () => {
     expect(credits.get('player1')).toBe(0)
   })
 
-  it('chain split + validator redundancy x2 still applies to publisher', () => {
+  it('chain split + validator redundancy x1 still applies only to publisher', () => {
     const state = makeState({
       chainSplit: { active: true, triggeredBy: 'player1' },
-      validatorRedundancyCount: 2,
+      validatorRedundancyCount: 1,
       players: [
         makePlayer('player1', { validators: [makeCard(CardType.VALIDATOR)] }),
         makePlayer('player2', { validators: [makeCard(CardType.VALIDATOR)] }),
       ],
     })
     const credits = calculateBlockCredits(state, 'player1')
-    expect(credits.get('player1')).toBe(4) // 1 * 4
+    expect(credits.get('player1')).toBe(2) // 1 validator * 2^1 = 2, chain split so only publisher
     expect(credits.get('player2')).toBe(0)
   })
 
   it('player with 0 validators earns 0 regardless of multiplier', () => {
     const state = makeState({
-      validatorRedundancyCount: 2,
+      validatorRedundancyCount: 1,
       players: [
         makePlayer('player1', { validators: [] }),
         makePlayer('player2', { validators: [makeCard(CardType.VALIDATOR)] }),
@@ -100,6 +101,6 @@ describe('calculateBlockCredits', () => {
     })
     const credits = calculateBlockCredits(state, 'player1')
     expect(credits.get('player1')).toBe(0)
-    expect(credits.get('player2')).toBe(4)
+    expect(credits.get('player2')).toBe(2) // 1 validator * 2^1 = 2
   })
 })

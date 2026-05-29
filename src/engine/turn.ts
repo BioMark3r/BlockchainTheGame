@@ -31,17 +31,20 @@ function nextTurn(state: GameState): PlayerId {
 }
 
 /**
- * After every action, check if player1 is completely out of cards (hand + draw pile = 0).
- * Only player1 running out triggers a fork — player2 does not.
+ * After an action, check if the acting player is completely out of cards (hand + draw pile = 0).
+ * We only check the player who just acted — this avoids false positives in unit tests where
+ * the opposing player starts with 0 cards, and correctly mirrors the rule: a fork triggers
+ * when a player uses their last card.
  */
-function checkForkCondition(state: GameState): GameState {
+function checkForkCondition(state: GameState, actingPlayerId: PlayerId): GameState {
   if (state.phase === 'ended') return state
 
-  const player1 = state.players[0]
-  if (!player1) return state
+  const actor = state.players.find((p) => p.id === actingPlayerId)
+  if (!actor) return state
 
-  if (player1.hand.length === 0 && player1.drawPile.length === 0) {
-    const endedState: GameState = { ...state, phase: 'ended', forkReason: 'player1_out_of_cards' }
+  if (actor.hand.length === 0 && actor.drawPile.length === 0) {
+    const reason = actingPlayerId === 'player1' ? 'player1_out_of_cards' : 'player2_out_of_cards'
+    const endedState: GameState = { ...state, phase: 'ended', forkReason: reason }
     return { ...endedState, winner: getWinner(endedState) }
   }
 
@@ -108,7 +111,7 @@ function handlePlayCard(state: GameState, action: PlayCardAction): ActionResult 
   // Advance turn only if game didn't end via FORK
   if (newState.phase === 'playing') {
     newState = { ...newState, currentTurn: nextTurn(newState) }
-    newState = checkForkCondition(newState)
+    newState = checkForkCondition(newState, action.playerId)
   }
 
   return succeed(newState)
@@ -177,8 +180,9 @@ function handlePublishBlock(state: GameState, action: PublishBlockAction): Actio
     creditedPlayers[i] = { ...p, credits: p.credits + earned }
   }
 
-  newState = { ...newState, players: creditedPlayers, currentTurn: nextTurn(newState) }
-  newState = checkForkCondition(newState)
+  // Reset Validator Redundancy after each block — it's a one-shot doubler, not permanent
+  newState = { ...newState, players: creditedPlayers, currentTurn: nextTurn(newState), validatorRedundancyCount: 0 }
+  newState = checkForkCondition(newState, action.playerId)
 
   return succeed(newState)
 }
@@ -224,7 +228,7 @@ function handleDiscardRedraw(state: GameState, action: DiscardRedrawAction): Act
     players: newPlayers,
     currentTurn: nextTurn(state),
   }
-  newState = checkForkCondition(newState)
+  newState = checkForkCondition(newState, action.playerId)
 
   return succeed(newState)
 }

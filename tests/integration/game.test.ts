@@ -281,7 +281,7 @@ describe('Validator Redundancy x2 stacking', () => {
     if (s.phase !== 'playing' || !getPlayer(s, 'player1').hand.some((c) => c.type === CardType.VALIDATOR_REDUNDANCY)) return
 
     s = playCard(s, 'player1', CardType.VALIDATOR_REDUNDANCY)
-    expect(s.validatorRedundancyCount).toBe(2)
+    expect(s.validatorRedundancyCount).toBe(1) // single-use, not stackable
     s = applyAction(s, { type: 'DISCARD_REDRAW', playerId: 'player2', cardIdsToDiscard: [] }).state
 
     // Player1 publishes a block
@@ -296,8 +296,10 @@ describe('Validator Redundancy x2 stacking', () => {
     const creditsAfter = getPlayer(s, 'player1').credits
     const earned = creditsAfter - creditsBefore
 
-    // multiplier = 2^2 = 4; earned = validatorCount * 4
-    expect(earned).toBe(validatorCount * 4)
+    // multiplier = 2^1 = 2; earned = validatorCount * 2
+    expect(earned).toBe(validatorCount * 2)
+    // VR resets to 0 after block is published
+    expect(s.validatorRedundancyCount).toBe(0)
   })
 })
 
@@ -440,7 +442,7 @@ describe('Out of cards fork conditions', () => {
     expect(final.forkReason).toBe('player1_out_of_cards')
   })
 
-  it('exhausting only player2 does NOT trigger a fork', () => {
+  it('exhausting player2 hand + draw pile also triggers a fork', () => {
     let s = createGame('player1', 'player2')
 
     // Drain player2 by discarding all hand cards on every player2 turn
@@ -462,12 +464,9 @@ describe('Out of cards fork conditions', () => {
       }
     }
 
-    const p2Final = getPlayer(s, 'player2')
-    // Player2 is now out of cards
-    expect(p2Final.hand.length + p2Final.drawPile.length).toBe(0)
-    // Game should still be playing (player1 still has cards)
-    expect(s.phase).toBe('playing')
-    expect(s.forkReason).toBeNull()
+    // Game should have ended — player2 ran out of cards
+    expect(s.phase).toBe('ended')
+    expect(s.forkReason).toBe('player2_out_of_cards')
   })
 })
 

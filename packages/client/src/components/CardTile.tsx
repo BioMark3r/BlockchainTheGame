@@ -25,7 +25,7 @@ const CARD_LABELS: Record<CardType, string> = {
 const CARD_TOOLTIPS: Record<CardType, string> = {
   [CT.TRANSACTION]: 'Select 3 Transaction cards, then click Publish Block to add a block to the chain and earn credits.',
   [CT.VALIDATOR]: 'Play to add a validator node. Each active validator increases the credits you earn per block.',
-  [CT.VALIDATOR_REDUNDANCY]: 'Doubles your credit multiplier this turn. Stack multiple for exponential gains.',
+  [CT.VALIDATOR_REDUNDANCY]: 'Doubles credits earned for the next block published, then resets. Not stackable — play it just before publishing for maximum effect.',
   [CT.CHAIN_SPLIT]: 'From now on, only you earn credits when you publish blocks. Your opponent earns nothing per block for the rest of the game.',
   [CT.CHAIN_REORG]: 'Reorganize the chain — removes the last block, undoing its credits.',
   [CT.INVALID_TRANSACTION]: 'Mark a block as invalid and remove it from the chain.',

@@ -8,7 +8,7 @@ const CARD_REFERENCE = [
   { name: 'Transaction',           count: 30, accent: 'text-blue-300',     effect: 'Select 3 to publish a block' },
   { name: 'Validator',             count: 10, accent: 'text-green-300',    effect: 'Earns 1 credit per block published (by anyone)' },
   { name: 'Reshuffle',             count: 3,  accent: 'text-emerald-300',  effect: 'Shuffle discard pile back into draw deck' },
-  { name: 'Validator Redundancy',  count: 2,  accent: 'text-teal-300',     effect: 'Doubles credit multiplier for the game (stackable)' },
+  { name: 'Validator Redundancy',  count: 2,  accent: 'text-teal-300',     effect: 'Doubles credits for the next block published, then resets. Not stackable.' },
   { name: 'Invalid Transaction',   count: 2,  accent: 'text-red-300',      effect: 'Remove one block from the chain' },
   { name: 'Chain Split',           count: 1,  accent: 'text-orange-300',   effect: 'Only you earn credits per block from now on' },
   { name: 'Chain Reorg',           count: 1,  accent: 'text-sky-300',      effect: 'Remove ALL blocks from the chain' },
@@ -40,7 +40,7 @@ export default function HowToPlayModal({ onClose }: Props) {
         <section className="mb-6">
           <h3 className="text-yellow-400 font-bold text-sm uppercase tracking-widest mb-2">🎯 Objective</h3>
           <p className="text-gray-300 text-sm leading-relaxed">
-            Earn the most credits before the blockchain forks. Build validators, publish blocks, and disrupt your opponent's chain.
+            Earn the most credits before the blockchain forks. Build validators, publish blocks, and disrupt your opponent's block production.
           </p>
         </section>
 
@@ -102,7 +102,7 @@ export default function HowToPlayModal({ onClose }: Props) {
         <section className="mb-6">
           <h3 className="text-yellow-400 font-bold text-sm uppercase tracking-widest mb-2">🏁 Game End</h3>
           <p className="text-gray-300 text-sm leading-relaxed">
-            The game ends when a player plays the <span className="text-amber-300 font-semibold">Fork</span> card, or when Player 1 runs out of cards.
+            The game ends when a player plays the <span className="text-amber-300 font-semibold">Fork</span> card, or when <span className="text-white font-semibold">either player</span> runs out of cards (hand and draw pile both empty).
             The player with the most credits wins.
           </p>
         </section>

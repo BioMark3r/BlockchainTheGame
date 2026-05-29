@@ -73,7 +73,7 @@ export default function ChainView({ chain, genesisCard, selectingForInvalidTx = 
           )}
           {(validatorRedundancyCount ?? 0) > 0 && (
             <span className="text-xs bg-blue-950/60 border border-blue-500/50 text-blue-300 rounded-full px-2 py-0.5">
-              ⚡ Validator Redundancy ×{validatorRedundancyCount}
+              ⚡ Validator Redundancy Active — next block earns 2×
             </span>
           )}
         </div>

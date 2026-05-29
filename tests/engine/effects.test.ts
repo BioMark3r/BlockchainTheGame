@@ -110,7 +110,7 @@ describe('VALIDATOR_REDUNDANCY effect', () => {
     expect(next.validatorRedundancyCount).toBe(1)
   })
 
-  it('increments twice to 2 when both copies played', () => {
+  it('stays at 1 when a second copy is played (not stackable)', () => {
     const vr1 = makeCard(CardType.VALIDATOR_REDUNDANCY, 'vr-1')
     const vr2 = makeCard(CardType.VALIDATOR_REDUNDANCY, 'vr-2')
     let state = makeState({
@@ -118,7 +118,7 @@ describe('VALIDATOR_REDUNDANCY effect', () => {
     })
     state = applyEffect(state, playCard('player1', 'vr-1'))
     state = applyEffect(state, playCard('player1', 'vr-2'))
-    expect(state.validatorRedundancyCount).toBe(2)
+    expect(state.validatorRedundancyCount).toBe(1) // capped — no stacking
   })
 })
 

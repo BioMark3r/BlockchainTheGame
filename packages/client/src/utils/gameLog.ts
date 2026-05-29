@@ -181,6 +181,8 @@ export function deriveLogEntries(
         ? '⑂ Fork card played'
         : next.forkReason === 'player1_out_of_cards'
         ? '📭 Player 1 ran out of cards'
+        : next.forkReason === 'player2_out_of_cards'
+        ? '📭 Player 2 ran out of cards'
         : 'Game over'
     entries.push({
       id: nextId(),

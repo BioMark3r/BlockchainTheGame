@@ -48,9 +48,9 @@ export interface GameState {
   currentTurn: PlayerId
   chain: Block[]              // blocks published to the chain
   chainSplit: ChainSplitState
-  validatorRedundancyCount: number  // 0, 1, or 2 — each doubles credits
+  validatorRedundancyCount: number  // 0 or 1 — active for the next block published, then resets
   winner: PlayerId | null
-  forkReason: 'fork_card' | 'player1_out_of_cards' | null
+  forkReason: 'fork_card' | 'player1_out_of_cards' | 'player2_out_of_cards' | null
   genesisCard: Card
 }
 

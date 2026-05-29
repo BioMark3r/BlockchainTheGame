@@ -339,7 +339,7 @@ describe('Fork condition — player1 out of cards', () => {
     expect(result.state.forkReason).toBe('player1_out_of_cards')
   })
 
-  it('does NOT trigger fork when player2 runs out of cards', () => {
+  it('DOES trigger fork when player2 plays their last card', () => {
     const card = makeCard(CardType.VALIDATOR, 'v-1')
     const state = makeState({
       currentTurn: 'player2',
@@ -350,7 +350,8 @@ describe('Fork condition — player1 out of cards', () => {
     })
     const result = applyAction(state, { type: 'PLAY_CARD', playerId: 'player2', cardId: 'v-1' })
     expect(result.success).toBe(true)
-    expect(result.state.phase).toBe('playing')
+    expect(result.state.phase).toBe('ended')
+    expect(result.state.forkReason).toBe('player2_out_of_cards')
   })
 
   it('player1 still has draw pile — no fork', () => {
@@ -443,32 +444,34 @@ describe('Validator Redundancy x2 = 4x credits', () => {
     const tx3 = makeCard(CardType.TRANSACTION, 'tx-3')
     const v1 = makeCard(CardType.VALIDATOR, 'v-1')
 
-    // player1 plays both VR cards, then publishes a block
+    // player1 plays VR, then publishes a block — VR is single-use (2x, not stackable)
+    // Player2 needs enough cards to survive two turns without triggering fork
+    const p2cards = Array.from({ length: 10 }, (_, i) => makeCard(CardType.TRANSACTION, `tx-p2-${i}`))
     let state = makeState({
       currentTurn: 'player1',
       players: [
         makePlayer('player1', { hand: [vr1, vr2, tx1, tx2, tx3], validators: [v1] }),
-        makePlayer('player2'),
+        makePlayer('player2', { hand: p2cards }),
       ],
     })
     // play vr1 (turn goes to p2, back to p1)
     state = applyAction(state, { type: 'PLAY_CARD', playerId: 'player1', cardId: 'vr-1' }).state
-    // simulate player2 passing turn back
     state = applyAction(state, { type: 'DISCARD_REDRAW', playerId: 'player2', cardIdsToDiscard: [] }).state
-    // play vr2
+    // play vr2 — count stays at 1 (no stacking)
     state = applyAction(state, { type: 'PLAY_CARD', playerId: 'player1', cardId: 'vr-2' }).state
-    // simulate player2 passing turn back
     state = applyAction(state, { type: 'DISCARD_REDRAW', playerId: 'player2', cardIdsToDiscard: [] }).state
 
-    expect(state.validatorRedundancyCount).toBe(2)
+    expect(state.validatorRedundancyCount).toBe(1) // capped — second VR has no additional effect
 
-    // publish block → should earn 1 validator * 4 = 4 credits
+    // publish block → should earn 1 validator * 2 = 2 credits (2x, not 4x)
     const result = applyAction(state, {
       type: 'PUBLISH_BLOCK',
       playerId: 'player1',
       cardIds: ['tx-1', 'tx-2', 'tx-3'],
     })
     expect(result.success).toBe(true)
-    expect(result.state.players[0]!.credits).toBe(4)
+    expect(result.state.players[0]!.credits).toBe(2)
+    // VR resets after block is published
+    expect(result.state.validatorRedundancyCount).toBe(0)
   })
 })
