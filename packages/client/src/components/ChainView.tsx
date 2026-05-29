@@ -7,11 +7,12 @@ interface Props {
   genesisCard: Card
   selectingForInvalidTx?: boolean
   onBlockSelected?: (blockId: string) => void
+  localPlayerId?: string
   chainSplit?: ChainSplitState
   validatorRedundancyCount?: number
 }
 
-export default function ChainView({ chain, genesisCard, selectingForInvalidTx = false, onBlockSelected, chainSplit, validatorRedundancyCount }: Props) {
+export default function ChainView({ chain, genesisCard, selectingForInvalidTx = false, onBlockSelected, localPlayerId, chainSplit, validatorRedundancyCount }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const prevLengthRef = useRef(chain.length)
   const seenIdsRef = useRef<Set<string>>(new Set(chain.map((b) => b.id)))
@@ -106,7 +107,7 @@ export default function ChainView({ chain, genesisCard, selectingForInvalidTx = 
               index={i}
               isFlashing={flashingIds.has(block.id)}
               isNew={newIds.has(block.id)}
-              isTargetable={selectingForInvalidTx}
+              isTargetable={selectingForInvalidTx && (localPlayerId ? block.publishedBy !== localPlayerId : true)}
               {...(onBlockSelected ? { onSelect: onBlockSelected } : {})}
             />
           </React.Fragment>

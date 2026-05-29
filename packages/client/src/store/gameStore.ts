@@ -58,7 +58,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   setGameState: (newState) => {
     const prev = get().gameState
-    const newEntries = deriveLogEntries(prev, newState, get().gameLog.length)
+    const newEntries = deriveLogEntries(prev, newState, get().gameLog.length, get().playerNames)
     set((s) => ({
       gameState: newState,
       gameLog: newEntries.length > 0 ? [...s.gameLog, ...newEntries] : s.gameLog,

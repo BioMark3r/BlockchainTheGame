@@ -40,6 +40,8 @@ export default function GameBoard({ onReturnToLobby }: Props) {
 
   const turnBanner = isMyTurn ? (
     <span className="text-green-400 font-bold tracking-wide">▶ YOUR TURN</span>
+  ) : opponentPlayer.isCpu ? (
+    <span className="text-blue-400 animate-pulse font-medium">🤖 CPU is thinking…</span>
   ) : (
     <span className="text-gray-500">
       ⏳ <span className="text-white">{displayName(opponentPlayer.id, opponentPlayer.isCpu, playerNames)}</span>'s turn
@@ -113,6 +115,7 @@ export default function GameBoard({ onReturnToLobby }: Props) {
         chain={chain}
         genesisCard={gameState.genesisCard}
         selectingForInvalidTx={!!invalidTxCardId}
+        localPlayerId={localPlayerId}
         chainSplit={chainSplit}
         validatorRedundancyCount={validatorRedundancyCount}
         onBlockSelected={(blockId) => {

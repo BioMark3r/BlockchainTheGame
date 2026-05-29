@@ -154,7 +154,7 @@ export default function PlayerHand({ hand, localPlayerId, isMyTurn, onInvalidTxP
               onClick={handlePassTurn}
               className="text-xs text-gray-600 hover:text-gray-400 border border-gray-700 hover:border-gray-500 px-3 py-1.5 rounded-lg transition-colors"
             >
-              Pass Turn
+              End Turn
             </button>
             <button
               onClick={enterDiscardMode}

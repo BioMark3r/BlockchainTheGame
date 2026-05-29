@@ -29,7 +29,7 @@ const CARD_TOOLTIPS: Record<CardType, string> = {
   [CT.VALIDATOR]: 'Play to add a validator node. Each active validator increases the credits you earn per block.',
   [CT.VALIDATOR_REDUNDANCY]: 'Doubles credits earned for the next block published, then resets. Not stackable — play it just before publishing for maximum effect.',
   [CT.CHAIN_SPLIT]: 'From now on, only you earn credits when you publish blocks. Your opponent earns nothing per block for the rest of the game.',
-  [CT.CHAIN_REORG]: 'Reorganize the chain — removes the last block, undoing its credits.',
+  [CT.CHAIN_REORG]: 'Reorganize the chain — removes the last 3 blocks from the chain.',
   [CT.INVALID_TRANSACTION]: 'Mark a block as invalid and remove it from the chain.',
   [CT.FORK]: 'Trigger a hard fork! Ends the game immediately. The player with the most credits wins.',
   [CT.RESHUFFLE]: 'Shuffle your entire discard pile back into your draw pile for more cards.',

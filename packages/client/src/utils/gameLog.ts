@@ -1,8 +1,10 @@
 import type { GameState, PlayerId } from '@shared/types'
+import { CardType } from '@shared/types'
 import type { LogEntry } from '../store/gameStore'
 
-function playerLabel(id: PlayerId, isCpu: boolean): string {
+function playerLabel(id: PlayerId, isCpu: boolean, names?: Record<string, string>): string {
   if (isCpu) return '🤖 CPU'
+  if (names?.[id]) return names[id]!
   if (id === 'player1') return 'Player 1'
   if (id === 'player2') return 'Player 2'
   return id
@@ -21,6 +23,7 @@ export function deriveLogEntries(
   prev: GameState | null,
   next: GameState,
   _existingCount: number,
+  playerNames?: Record<string, string>,
 ): LogEntry[] {
   if (!prev) {
     // Game just started
@@ -29,7 +32,7 @@ export function deriveLogEntries(
       {
         id: nextId(),
         icon: '🚀',
-        text: `Game started — ${playerLabel(p1.id, p1.isCpu)} goes first`,
+        text: `Game started — ${playerLabel(p1.id, p1.isCpu, playerNames)} goes first`,
         playerId: null,
         turn: 0,
       },
@@ -50,25 +53,28 @@ export function deriveLogEntries(
   const nextActor = nextP(actorId)
   if (!prevActor || !nextActor) return entries
 
-  const label = playerLabel(actorId, prevActor.isCpu)
+  const label = playerLabel(actorId, prevActor.isCpu, playerNames)
 
   // 1. Chain grew → block published
   if (next.chain.length > prev.chain.length) {
     const newBlocks = next.chain.slice(prev.chain.length)
     for (const block of newBlocks) {
+      // Detect Block Reward: its third transaction slot holds the Block Reward card
+      const isBlockReward = block.transactions.some(t => t.type === CardType.BLOCK_REWARD)
       const creditsEarned: string[] = []
       for (const p of next.players) {
         const prevCredits = prevP(p.id)?.credits ?? 0
         const earned = p.credits - prevCredits
         if (earned > 0) {
-          creditsEarned.push(`${playerLabel(p.id, p.isCpu)} +${earned}`)
+          creditsEarned.push(`${playerLabel(p.id, p.isCpu, playerNames)} +${earned}`)
         }
       }
       const creditStr = creditsEarned.length > 0 ? ` (${creditsEarned.join(', ')})` : ''
+      const blockType = isBlockReward ? '🪙 Block Reward — ' : ''
       entries.push({
         id: nextId(),
-        icon: '📦',
-        text: `${label} published block #${next.chain.length}${creditStr}`,
+        icon: isBlockReward ? '🪙' : '📦',
+        text: `${label} published block #${next.chain.length} ${blockType}${creditStr}`,
         playerId: actorId,
         turn: next.chain.length,
       })
@@ -82,9 +88,9 @@ export function deriveLogEntries(
       entries.push({
         id: nextId(),
         icon: '🔄',
-        text: `${label} played Chain Reorg — all ${prev.chain.length} blocks removed`,
+        text: `${label} played Chain Reorg — ${removed} block${removed !== 1 ? 's' : ''} removed`,
         playerId: actorId,
-        turn: 0,
+        turn: next.chain.length,
       })
     } else {
       entries.push({
@@ -148,10 +154,15 @@ export function deriveLogEntries(
   ) {
     // Draw pile grew → reshuffle happened
     if (nextDraw > prevDraw && nextDiscard < prevDiscard) {
+      // Check if the opponent drew a card as a result (Reshuffle cost)
+      const oppId = actorId === 'player1' ? 'player2' : 'player1'
+      const prevOpp = prevP(oppId)
+      const nextOpp = nextP(oppId)
+      const oppDrewCard = prevOpp && nextOpp && nextOpp.hand.length > prevOpp.hand.length
       entries.push({
         id: nextId(),
         icon: '🔀',
-        text: `${label} played Reshuffle — deck refilled`,
+        text: `${label} played Reshuffle — deck refilled${oppDrewCard ? ' (opponent draws 1)' : ''}`,
         playerId: actorId,
         turn: next.chain.length,
       })
@@ -174,7 +185,7 @@ export function deriveLogEntries(
   if (prev.phase !== 'ended' && next.phase === 'ended') {
     const winnerPlayer = next.winner ? nextP(next.winner) : null
     const winnerLabel = winnerPlayer
-      ? playerLabel(winnerPlayer.id, winnerPlayer.isCpu)
+      ? playerLabel(winnerPlayer.id, winnerPlayer.isCpu, playerNames)
       : 'Nobody'
     const reason =
       next.forkReason === 'fork_card'

@@ -47,7 +47,8 @@ export default function GameOverModal({ gameState, localPlayerId, onPlayAgain }:
         <p className="text-gray-300 mb-6 text-lg">
           {winner ? (
             <>
-              <span className="font-bold text-white">{winnerLabel}</span> wins!
+              <span className="font-bold text-white">{winnerLabel}</span>
+              {winner === localPlayerId ? ' win!' : ' wins!'}
             </>
           ) : (
             "It's a draw!"
