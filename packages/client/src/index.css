@@ -9,6 +9,8 @@
   --neon-red: #ff2d55;
   --panel-bg: #0a0e1a;
   --panel-border: #1e2d4a;
+  --brand-blue: #3b82f6;
+  --brand-cyan: #22d3ee;
 }
 
 @layer base {

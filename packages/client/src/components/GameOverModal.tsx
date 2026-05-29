@@ -43,7 +43,7 @@ export default function GameOverModal({ gameState, localPlayerId, onPlayAgain }:
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-gray-900 border border-gray-700 rounded-2xl p-8 w-full max-w-md shadow-2xl text-center">
         <div className="text-5xl mb-4">{isLocalWinner ? '🏆' : '💀'}</div>
-        <h2 className="text-2xl font-bold mb-1 text-yellow-400">Game Over</h2>
+        <h2 className="text-2xl font-bold mb-1 text-blue-400">Game Over</h2>
         <p className="text-gray-300 mb-6 text-lg">
           {winner ? (
             <>
@@ -67,13 +67,13 @@ export default function GameOverModal({ gameState, localPlayerId, onPlayAgain }:
                 <div
                   key={p.id}
                   className={`flex justify-between items-center px-3 py-2 rounded-lg ${
-                    isWinner ? 'bg-yellow-400/10 border border-yellow-400/30' : 'bg-gray-700/40'
+                    isWinner ? 'bg-blue-400/10 border border-blue-400/30' : 'bg-gray-700/40'
                   }`}
                 >
                   <span className="font-medium text-sm">
                     {label} {isWinner && '👑'}
                   </span>
-                  <span className={`font-bold text-lg ${isWinner ? 'text-yellow-400' : 'text-white'}`}>
+                  <span className={`font-bold text-lg ${isWinner ? 'text-blue-400' : 'text-white'}`}>
                     {p.credits}
                   </span>
                 </div>
@@ -136,7 +136,7 @@ export default function GameOverModal({ gameState, localPlayerId, onPlayAgain }:
             {gameState.phase === 'ended' && (
               <button
                 onClick={handleRematch}
-                className="w-full bg-yellow-400 hover:bg-yellow-300 text-gray-950 font-bold py-3 rounded-xl transition-colors"
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-colors"
               >
                 🔄 Rematch
               </button>

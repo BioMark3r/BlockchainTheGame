@@ -29,7 +29,7 @@ export default function PlayerZone({ player, isLocal, isCurrentTurn, localPlayer
           />
           <span className="font-bold text-sm">{displayName(player.id, player.isCpu, playerNames)}</span>
           {isLocal && (
-            <span className="text-[10px] font-bold text-cyan-400 border border-cyan-500/50 rounded px-1 py-0.5 ml-1">
+            <span className="text-[10px] font-bold text-blue-400 border border-blue-500/50 rounded px-1 py-0.5 ml-1">
               YOU
             </span>
           )}

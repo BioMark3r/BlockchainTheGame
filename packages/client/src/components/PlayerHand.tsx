@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import type { Card, PlayerId } from '@shared/types'
 import { CardType } from '@shared/types'
 import CardTile from './CardTile'
@@ -21,6 +21,17 @@ export default function PlayerHand({ hand, localPlayerId, isMyTurn, onInvalidTxP
   function setPendingInvalidTx(cardId: string | null) {
     setPendingInvalidTxCardId(cardId)
     onInvalidTxPending?.(cardId)
+  }
+
+  useEffect(() => {
+    if (pendingInvalidTxCardId && !hand.find(c => c.id === pendingInvalidTxCardId)) {
+      setPendingInvalidTxCardId(null)
+      onInvalidTxPending?.(null)
+    }
+  }, [hand, pendingInvalidTxCardId])
+
+  function handlePassTurn() {
+    send({ type: 'ACTION', action: { type: 'DISCARD_REDRAW', playerId: localPlayerId, cardIdsToDiscard: [] } })
   }
 
   function toggleSelect(cardId: string) {
@@ -116,7 +127,7 @@ export default function PlayerHand({ hand, localPlayerId, isMyTurn, onInvalidTxP
       {/* Action buttons */}
       <div className="flex gap-2 mb-3 flex-wrap">
         {!discardSelectMode && selectedIds.length > 0 && (
-          <div className="text-xs text-yellow-300 flex items-center gap-2">
+          <div className="text-xs text-blue-300 flex items-center gap-2">
             <span>{selectedIds.length}/3 transactions selected</span>
             <button
               onClick={() => setSelectedIds([])}
@@ -137,12 +148,20 @@ export default function PlayerHand({ hand, localPlayerId, isMyTurn, onInvalidTxP
         )}
 
         {isMyTurn && !discardSelectMode && (
-          <button
-            onClick={enterDiscardMode}
-            className="bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs px-3 py-1.5 rounded-lg transition-colors ml-auto"
-          >
-            🔀 Select cards to discard
-          </button>
+          <div className="ml-auto flex gap-2">
+            <button
+              onClick={handlePassTurn}
+              className="text-xs text-gray-600 hover:text-gray-400 border border-gray-700 hover:border-gray-500 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Pass Turn
+            </button>
+            <button
+              onClick={enterDiscardMode}
+              className="bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs px-3 py-1.5 rounded-lg transition-colors"
+            >
+              🔀 Select cards to discard
+            </button>
+          </div>
         )}
 
         {discardSelectMode && (

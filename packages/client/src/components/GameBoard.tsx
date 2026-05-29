@@ -53,18 +53,13 @@ export default function GameBoard({ onReturnToLobby }: Props) {
       {/* Top bar */}
       <div className="flex items-center justify-between bg-[#0a0e1a] border border-[#1e2d4a] rounded-xl px-3 py-2 sm:px-5 sm:py-3">
         <div className="flex items-center gap-3">
-          <span className="text-sm sm:text-base text-yellow-400 font-bold">⛓️ Blockchain: The Game</span>
-          <button onClick={() => setShowHowToPlay(true)} title="How to Play" className="text-gray-500 hover:text-gray-300 text-sm">❓</button>
-          {chainSplit.active && (
-            <span className="text-xs bg-orange-950/60 border border-orange-500/50 text-orange-300 rounded-full px-2 py-0.5">
-              🔱 Chain Split Active
-            </span>
-          )}
-          {validatorRedundancyCount > 0 && (
-            <span className="text-xs bg-cyan-950/60 border border-cyan-500/50 text-cyan-300 rounded-full px-2 py-0.5">
-              ⚡ Redundancy ×{validatorRedundancyCount}
-            </span>
-          )}
+          <span className="text-sm sm:text-base text-blue-400 font-bold">⛓️ Blockchain: The Game</span>
+          <button
+            onClick={() => setShowHowToPlay(true)}
+            className="text-xs text-blue-400 hover:text-blue-300 border border-blue-800/60 hover:border-blue-600 px-2.5 py-1 rounded-lg transition-colors font-medium"
+          >
+            How to Play
+          </button>
         </div>
         <div className="flex items-center gap-3">
           <div className="text-sm">{turnBanner}</div>
@@ -118,6 +113,8 @@ export default function GameBoard({ onReturnToLobby }: Props) {
         chain={chain}
         genesisCard={gameState.genesisCard}
         selectingForInvalidTx={!!invalidTxCardId}
+        chainSplit={chainSplit}
+        validatorRedundancyCount={validatorRedundancyCount}
         onBlockSelected={(blockId) => {
           send({
             type: 'ACTION',

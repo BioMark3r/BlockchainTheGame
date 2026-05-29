@@ -36,15 +36,18 @@ export default function RoomLobby() {
     <div className="min-h-screen flex items-center justify-center bg-[#060910]">
       {showHowToPlay && <HowToPlayModal onClose={() => setShowHowToPlay(false)} />}
       <div className="bg-[#0a0e1a] border border-[#1e2d4a] rounded-2xl p-5 sm:p-8 w-full max-w-md shadow-2xl">
-        <h1 className="text-3xl font-bold text-center mb-2 text-yellow-400 drop-shadow-[0_0_8px_rgba(255,230,0,0.6)] tracking-tight">
+        <h1 className="text-3xl font-bold text-center mb-2 text-blue-400 drop-shadow-[0_0_8px_rgba(59,130,246,0.6)] tracking-tight">
           ⛓️ Blockchain: The Game
         </h1>
         <p className="text-center text-gray-400 text-sm mb-2">
           Build the longest chain. Earn the most credits.
         </p>
         <div className="text-center mb-6">
-          <button onClick={() => setShowHowToPlay(true)} className="text-xs text-blue-400 hover:text-blue-300 underline">
-            ❓ How to Play
+          <button
+            onClick={() => setShowHowToPlay(true)}
+            className="text-xs text-blue-400 hover:text-blue-300 border border-blue-800/60 hover:border-blue-600 px-3 py-1.5 rounded-lg transition-colors font-medium"
+          >
+            How to Play
           </button>
         </div>
 
@@ -56,9 +59,9 @@ export default function RoomLobby() {
 
         {/* Waiting for opponent */}
         {roomCode && (
-          <div className="mb-6 bg-gray-800 border border-yellow-600 rounded-xl p-4 text-center">
+          <div className="mb-6 bg-gray-800 border border-blue-600 rounded-xl p-4 text-center">
             <p className="text-gray-400 text-sm mb-1">Share this code with your opponent:</p>
-            <p className="text-3xl font-bold text-yellow-300 tracking-[0.3em]">{roomCode}</p>
+            <p className="text-3xl font-bold text-blue-300 tracking-[0.3em]">{roomCode}</p>
             <p className="text-gray-500 text-xs mt-2">Waiting for player 2 to join…</p>
           </div>
         )}
@@ -74,7 +77,7 @@ export default function RoomLobby() {
                 maxLength={20}
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-yellow-400 text-white placeholder:text-gray-500"
+                className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-blue-400 text-white placeholder:text-gray-500"
               />
             </div>
 
@@ -85,7 +88,7 @@ export default function RoomLobby() {
                     type="checkbox"
                     checked={vsCpu}
                     onChange={(e) => setVsCpu(e.target.checked)}
-                    className="accent-yellow-400 w-4 h-4"
+                    className="accent-blue-500 w-4 h-4"
                   />
                   Play vs CPU 🤖
                 </label>
@@ -98,7 +101,7 @@ export default function RoomLobby() {
                       onClick={() => setDifficulty(d)}
                       className={`flex-1 py-1.5 rounded-lg text-xs font-bold capitalize transition-colors ${
                         difficulty === d
-                          ? 'bg-yellow-400 text-gray-900'
+                          ? 'bg-blue-600 text-white'
                           : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                       }`}
                     >
@@ -109,7 +112,7 @@ export default function RoomLobby() {
               )}
               <button
                 onClick={handleCreate}
-                className="w-full bg-yellow-400 hover:bg-yellow-300 text-gray-950 font-bold py-3 rounded-xl transition-colors"
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-colors"
               >
                 Create Room
               </button>
@@ -129,7 +132,7 @@ export default function RoomLobby() {
                 maxLength={6}
                 value={joinCode}
                 onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                className="flex-1 bg-gray-800 border border-gray-600 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-yellow-400 uppercase tracking-widest placeholder:normal-case placeholder:tracking-normal"
+                className="flex-1 bg-gray-800 border border-gray-600 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-blue-400 uppercase tracking-widest placeholder:normal-case placeholder:tracking-normal"
               />
               <button
                 onClick={handleJoin}

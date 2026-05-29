@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import type { Block, Card } from '@shared/types'
+import type { Block, Card, ChainSplitState } from '@shared/types'
 import BlockCard from './BlockCard'
 
 interface Props {
@@ -7,9 +7,11 @@ interface Props {
   genesisCard: Card
   selectingForInvalidTx?: boolean
   onBlockSelected?: (blockId: string) => void
+  chainSplit?: ChainSplitState
+  validatorRedundancyCount?: number
 }
 
-export default function ChainView({ chain, genesisCard, selectingForInvalidTx = false, onBlockSelected }: Props) {
+export default function ChainView({ chain, genesisCard, selectingForInvalidTx = false, onBlockSelected, chainSplit, validatorRedundancyCount }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const prevLengthRef = useRef(chain.length)
   const seenIdsRef = useRef<Set<string>>(new Set(chain.map((b) => b.id)))
@@ -58,9 +60,24 @@ export default function ChainView({ chain, genesisCard, selectingForInvalidTx = 
 
   return (
     <div className="min-w-0 bg-gray-900 border border-gray-700 rounded-2xl p-4">
-      <h2 className="text-xs text-gray-400 uppercase tracking-widest mb-3 font-semibold">
+      <h2 className="text-xs text-gray-400 uppercase tracking-widest mb-2 font-semibold">
         ⛓ The Chain — {chain.length} block{chain.length !== 1 ? 's' : ''}
       </h2>
+
+      {(chainSplit?.active || (validatorRedundancyCount ?? 0) > 0) && (
+        <div className="flex gap-2 mb-2 flex-wrap">
+          {chainSplit?.active && (
+            <span className="text-xs bg-orange-950/60 border border-orange-500/50 text-orange-300 rounded-full px-2 py-0.5">
+              🔱 Chain Split Active
+            </span>
+          )}
+          {(validatorRedundancyCount ?? 0) > 0 && (
+            <span className="text-xs bg-blue-950/60 border border-blue-500/50 text-blue-300 rounded-full px-2 py-0.5">
+              ⚡ Validator Redundancy ×{validatorRedundancyCount}
+            </span>
+          )}
+        </div>
+      )}
 
       {selectingForInvalidTx && (
         <div className="mb-3 bg-red-950/60 border border-red-600/60 text-red-300 text-sm rounded-lg px-3 py-2 animate-pulse">

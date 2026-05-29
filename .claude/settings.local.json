@@ -13,7 +13,8 @@
       "Read(//mnt/i/Blockchain_The_Game/packages/**)",
       "Bash(npx vite *)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173)",
-      "Bash(python3 -m json.tool)"
+      "Bash(python3 -m json.tool)",
+      "WebFetch(domain:www.altiuslabs.xyz)"
     ]
   }
 }

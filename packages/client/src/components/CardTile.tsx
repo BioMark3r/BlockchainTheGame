@@ -89,7 +89,7 @@ export default function CardTile({ card, isMyTurn, isSelected = false, isDiscard
             ? 'opacity-30 grayscale cursor-not-allowed'
             : 'cursor-pointer hover:scale-105 active:scale-95',
           isSelected
-            ? `ring-2 ring-yellow-400 scale-105`
+            ? `ring-2 ring-blue-400 scale-105`
             : isDiscardSelected
             ? `ring-2 ring-rose-500 scale-105`
             : '',
@@ -97,7 +97,7 @@ export default function CardTile({ card, isMyTurn, isSelected = false, isDiscard
         ].join(' ')}
         style={
           isSelected
-            ? { boxShadow: `0 0 14px rgba(255,230,0,0.6)` }
+            ? { boxShadow: `0 0 14px rgba(59,130,246,0.6)` }
             : isDiscardSelected
             ? { boxShadow: `0 0 14px rgba(244,63,94,0.6)` }
             : undefined
@@ -117,7 +117,7 @@ export default function CardTile({ card, isMyTurn, isSelected = false, isDiscard
         </span>
 
         {isSelected && (
-          <span className="absolute top-1 right-1 text-yellow-400 text-[10px] font-bold">✓</span>
+          <span className="absolute top-1 right-1 text-blue-400 text-[10px] font-bold">✓</span>
         )}
         {isDiscardSelected && (
           <span className="absolute top-1 right-1 text-rose-400 text-[10px] font-bold">🗑</span>
