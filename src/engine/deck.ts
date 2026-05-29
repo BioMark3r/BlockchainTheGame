@@ -4,7 +4,8 @@ import { Card, CardType, PlayerId } from '../shared/types'
 const DECK_COMPOSITION: Array<{ type: CardType; count: number }> = [
   { type: CardType.GENESIS, count: 1 },
   { type: CardType.VALIDATOR, count: 10 },
-  { type: CardType.TRANSACTION, count: 30 },
+  { type: CardType.TRANSACTION, count: 25 },
+  { type: CardType.BLOCK_REWARD, count: 5 },
   { type: CardType.RESHUFFLE, count: 3 },
   { type: CardType.CHAIN_SPLIT, count: 1 },
   { type: CardType.VALIDATOR_REDUNDANCY, count: 2 },

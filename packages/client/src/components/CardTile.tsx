@@ -7,6 +7,7 @@ interface Props {
   isMyTurn: boolean
   isSelected?: boolean
   isDiscardSelected?: boolean
+  isDisabled?: boolean
   onClick?: () => void
 }
 
@@ -20,6 +21,7 @@ const CARD_LABELS: Record<CardType, string> = {
   [CT.INVALID_TRANSACTION]: 'Invalid Txn',
   [CT.CHAIN_REORG]: 'Chain Reorg',
   [CT.FORK]: 'Fork',
+  [CT.BLOCK_REWARD]: 'Block Reward',
 }
 
 const CARD_TOOLTIPS: Record<CardType, string> = {
@@ -32,6 +34,7 @@ const CARD_TOOLTIPS: Record<CardType, string> = {
   [CT.FORK]: 'Trigger a hard fork! Ends the game immediately. The player with the most credits wins.',
   [CT.RESHUFFLE]: 'Shuffle your entire discard pile back into your draw pile for more cards.',
   [CT.GENESIS]: 'The genesis block. This card cannot be played.',
+  [CT.BLOCK_REWARD]: 'Auto-publish a block using this card + 2 Transaction cards from your hand. Earns half credits. Useful when you only have 2 Transaction cards.',
 }
 
 const CARD_COLORS: Record<CardType, { border: string; bg: string; glow: string; accent: string }> = {
@@ -44,6 +47,7 @@ const CARD_COLORS: Record<CardType, { border: string; bg: string; glow: string; 
   [CT.FORK]:                 { border: 'border-amber-400/80',  bg: 'bg-amber-950/60',  glow: 'rgba(251,191,36,0.5)',  accent: 'text-amber-300' },
   [CT.RESHUFFLE]:            { border: 'border-emerald-400/70',bg: 'bg-emerald-950/50',glow: 'rgba(52,211,153,0.5)',  accent: 'text-emerald-300' },
   [CT.GENESIS]:              { border: 'border-yellow-500/80', bg: 'bg-yellow-950/60', glow: 'rgba(234,179,8,0.5)',   accent: 'text-yellow-300' },
+  [CT.BLOCK_REWARD]:         { border: 'border-violet-400/70', bg: 'bg-violet-950/50', glow: 'rgba(139,92,246,0.5)',  accent: 'text-violet-300' },
 }
 
 const CARD_ICONS: Record<CardType, string> = {
@@ -56,12 +60,13 @@ const CARD_ICONS: Record<CardType, string> = {
   [CT.FORK]: '⑂',
   [CT.RESHUFFLE]: '🔀',
   [CT.GENESIS]: '🌐',
+  [CT.BLOCK_REWARD]: '🪙',
 }
 
-export default function CardTile({ card, isMyTurn, isSelected = false, isDiscardSelected = false, onClick }: Props) {
+export default function CardTile({ card, isMyTurn, isSelected = false, isDiscardSelected = false, isDisabled, onClick }: Props) {
   const [showTooltip, setShowTooltip] = useState(false)
   const [playing, setPlaying] = useState(false)
-  const disabled = !isMyTurn
+  const disabled = !isMyTurn || (isDisabled ?? false)
   const colors = CARD_COLORS[card.type] ?? { border: 'border-gray-500', bg: 'bg-gray-800', glow: 'rgba(0,0,0,0)', accent: 'text-gray-300' }
 
   function handleClick() {

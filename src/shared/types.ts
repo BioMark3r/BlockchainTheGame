@@ -10,6 +10,7 @@ export const CardType = {
   INVALID_TRANSACTION: 'INVALID_TRANSACTION',
   CHAIN_REORG: 'CHAIN_REORG',
   FORK: 'FORK',
+  BLOCK_REWARD: 'BLOCK_REWARD',
 } as const
 
 export type CardType = typeof CardType[keyof typeof CardType]

@@ -19,7 +19,7 @@ export function createGame(
   const shuffled2 = shuffleDeck(rawDeck2)
 
   const { drawn: dealtHand1, remainingDrawPile: dealtPile1 } = dealHand(shuffled1, 5)
-  const { drawn: dealtHand2, remainingDrawPile: dealtPile2 } = dealHand(shuffled2, 5)
+  const { drawn: dealtHand2, remainingDrawPile: dealtPile2 } = dealHand(shuffled2, 6)
   const { hand: hand1, drawPile: drawPile1 } = diversifyHand(dealtHand1, dealtPile1)
   const { hand: hand2, drawPile: drawPile2 } = diversifyHand(dealtHand2, dealtPile2)
 

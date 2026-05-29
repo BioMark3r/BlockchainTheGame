@@ -77,6 +77,12 @@ function handlePlayCard(state: GameState, action: PlayCardAction): ActionResult 
   if (card.type === CardType.GENESIS) {
     return fail(state, 'GENESIS card cannot be played')
   }
+  if (card.type === CardType.BLOCK_REWARD) {
+    const txCount = player.hand.filter((c) => c.type === CardType.TRANSACTION).length
+    if (txCount < 2) {
+      return fail(state, 'Block Reward requires at least 2 Transaction cards in hand')
+    }
+  }
   if (card.type === CardType.INVALID_TRANSACTION && !action.targetBlockId) {
     return fail(state, 'INVALID_TRANSACTION requires targetBlockId')
   }

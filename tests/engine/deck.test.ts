@@ -18,13 +18,14 @@ describe('buildDeck', () => {
     const { drawPile } = buildDeck('player1')
     const count = (type: CardType) => drawPile.filter((c) => c.type === type).length
     expect(count(CardType.VALIDATOR)).toBe(10)
-    expect(count(CardType.TRANSACTION)).toBe(30)
+    expect(count(CardType.TRANSACTION)).toBe(25)
     expect(count(CardType.RESHUFFLE)).toBe(3)
     expect(count(CardType.CHAIN_SPLIT)).toBe(1)
     expect(count(CardType.VALIDATOR_REDUNDANCY)).toBe(2)
     expect(count(CardType.INVALID_TRANSACTION)).toBe(2)
     expect(count(CardType.CHAIN_REORG)).toBe(1)
     expect(count(CardType.FORK)).toBe(1)
+    expect(count(CardType.BLOCK_REWARD)).toBe(5)
   })
 
   it('all card IDs are unique', () => {

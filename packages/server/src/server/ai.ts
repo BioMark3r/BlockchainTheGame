@@ -89,6 +89,13 @@ function chooseActionNormal(state: GameState, cpuPlayerId: PlayerId): TurnAction
     }
   }
 
+  // 1b. BLOCK_REWARD — play if have it + exactly 2 TX cards (prefer full block over this)
+  const blockRewardCard = hand.find((c) => c.type === CT.BLOCK_REWARD)
+  const txCount = txCards.length
+  if (blockRewardCard && txCount >= 2 && txCount < 3) {
+    return { type: 'PLAY_CARD', playerId: cpuPlayerId, cardId: blockRewardCard.id }
+  }
+
   // 2. FORK — play to lock in a winning lead
   if (forkCard && creditDiff >= 5 && turnsLeft <= 8) {
     return { type: 'PLAY_CARD', playerId: cpuPlayerId, cardId: forkCard.id }
@@ -207,8 +214,15 @@ function chooseActionHard(state: GameState, cpuPlayerId: PlayerId): TurnAction {
     }
   }
 
-  // 2. FORK — offensive: lower threshold than normal (>= 3 instead of >= 5)
-  if (forkCard && creditDiff >= 3 && turnsLeft <= 8) {
+  // 1b. BLOCK_REWARD — play if have it + exactly 2 TX cards (prefer full block over this)
+  const blockRewardCard = hand.find((c) => c.type === CT.BLOCK_REWARD)
+  const txCount = txCards.length
+  if (blockRewardCard && txCount >= 2 && txCount < 3) {
+    return { type: 'PLAY_CARD', playerId: cpuPlayerId, cardId: blockRewardCard.id }
+  }
+
+  // 2. FORK — offensive: creditDiff >= 5
+  if (forkCard && creditDiff >= 5 && turnsLeft <= 8) {
     return { type: 'PLAY_CARD', playerId: cpuPlayerId, cardId: forkCard.id }
   }
 

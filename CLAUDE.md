@@ -10,7 +10,7 @@ Earn the most credits before the chain forks.
 
 ### Setup
 - Each player has a 51-card deck. The genesis card is removed before play and placed in the center to start the chain — leaving 50 playable cards. The player who placed genesis goes first.
-- Each player draws 5 cards.
+- Each player draws 5 cards. Player 2 draws 6 cards instead of 5 to offset the first-player advantage.
 
 ### Turn Actions (pick one)
 1. Play an action card (validator, utility, or fork)
@@ -20,7 +20,7 @@ Earn the most credits before the chain forks.
 ### Credits
 - When any player publishes a block, **each player earns 1 credit per validator they have in play**.
 - Chain Split utility changes this: from that point, each player's blocks only earn credits for themselves.
-- Validator Redundancy doubles credits per validator for the rest of the game (stackable x2).
+- Validator Redundancy doubles credits for the next block published only, then resets. It is not stackable.
 
 ### Fork Conditions (game end)
 - A player plays the Fork card
@@ -31,12 +31,13 @@ Earn the most credits before the chain forks.
 |---|---|---|
 | Genesis | 1 | Removed before play; starts the chain |
 | Validator | 10 | Placed next to chain; earns credit per block |
-| Transaction | 30 | 3 required to publish a block |
-| Reshuffle | 3 | Shuffle discard pile back into draw deck |
+| Transaction | 25 | 3 required to publish a block |
+| Reshuffle | 3 | Shuffle discard pile back into draw deck. Opponent draws 1 card. |
+| Block Reward | 5 | Publish a block with only 2 Transaction cards. Earns half credits (rounded down). |
 | Chain Split | 1 | Blocks only give the publishing player credits going forward |
-| Validator Redundancy | 2 | Doubles credits per validator for the game |
+| Validator Redundancy | 2 | Doubles credits for the next block published only, then resets. Not stackable. |
 | Invalid Transaction | 2 | Remove one of the opponent's blocks from the chain |
-| Chain Reorg | 1 | Remove ALL blocks from the chain |
+| Chain Reorg | 1 | Remove the last 3 blocks from the chain (not all) |
 | Fork | 1 | End the game immediately (chain forks) |
 
 ## Architecture
@@ -86,9 +87,11 @@ Earn the most credits before the chain forks.
 - **QA teammate** owns: `/tests/integration/`
 
 ## Key Edge Cases to Handle
-- Validator Redundancy stacks: 2x played = 4x credits per validator
-- Chain Reorg after Chain Split: all blocks gone, but split state persists
+- Validator Redundancy doubles credits for the next block only, then resets — it does not stack across multiple plays
+- Chain Reorg after Chain Split: last 3 blocks removed, but split state persists
 - Invalid Transaction on a block that was already credited: no credit reversal, just block removed
 - Fork triggered by running out of cards: only the **first** player (player 1) running out triggers fork, not player 2
 - Player can Reshuffle only if they have cards in discard; no-op otherwise
 - A player with 0 validators earns 0 credits per block regardless of other effects
+- Block Reward uses the first 2 Transaction cards found in hand — the player does not choose which.
+- Reshuffle opponent draw: if opponent has no draw pile cards, no card is drawn (no-op for opponent).

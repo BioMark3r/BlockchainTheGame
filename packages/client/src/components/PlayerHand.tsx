@@ -108,6 +108,7 @@ export default function PlayerHand({ hand, localPlayerId, isMyTurn, onInvalidTxP
 
   const transactionCards = hand.filter((c) => c.type === CardType.TRANSACTION)
   const otherCards = hand.filter((c) => c.type !== CardType.TRANSACTION)
+  const txCount = transactionCards.length
 
   return (
     <div>
@@ -215,6 +216,7 @@ export default function PlayerHand({ hand, localPlayerId, isMyTurn, onInvalidTxP
               isMyTurn={isMyTurn}
               isSelected={false}
               isDiscardSelected={discardSelectMode && discardSelectedIds.includes(card.id)}
+              isDisabled={card.type === CardType.BLOCK_REWARD && txCount < 2}
               onClick={() => handleCardClick(card)}
             />
           ))}

@@ -28,7 +28,7 @@ This means you earn credits both when you publish blocks *and* when your opponen
 3. Both players earn credits per block — so the more blocks published, the more your validators pay out.
 
 **Credit modifiers:**
-- **Validator Redundancy** doubles your credits per validator for the rest of the game. Playing two copies stacks to 4× per validator.
+- **Validator Redundancy** doubles your credits for the next block published, then resets to 1×. It is not stackable.
 - **Chain Split** breaks the shared credit model — after it is played, only the player who publishes a block earns credits for that block. Your opponent earns nothing even if they have validators.
 
 ---
@@ -41,12 +41,13 @@ Each player's deck contains 50 cards (the Genesis card is removed before play an
 |---|---|---|
 | Genesis | 1 | Removed before play; placed in the center to start the chain |
 | Validator | 10 | **Play this to your field.** Earns you 1 credit every time any player publishes a block. You need validators to earn any credits at all. |
-| Transaction | 30 | Play exactly 3 to publish a block and trigger credit payouts for all validators in play |
-| Reshuffle | 3 | Shuffle your discard pile back into your draw deck |
-| Validator Redundancy | 2 | Doubles your credits per validator for the rest of the game (two copies = 4× per validator) |
+| Transaction | 25 | Play exactly 3 to publish a block and trigger credit payouts for all validators in play |
+| Reshuffle | 3 | Shuffle your discard pile back into your draw deck. Opponent draws 1 card. |
+| Block Reward | 5 | Publish a block with 2 Transaction cards. Earns half credits. |
+| Validator Redundancy | 2 | Doubles your credits for the next block published, then resets. Not stackable. |
 | Chain Split | 1 | From this point, only the publishing player earns credits — opponents earn nothing per block even with validators |
 | Invalid Transaction | 2 | Remove one block from the chain (does not reverse credits already earned) |
-| Chain Reorg | 1 | Remove ALL blocks from the chain (Chain Split state persists) |
+| Chain Reorg | 1 | Remove the last 3 blocks from the chain (Chain Split state persists) |
 | Fork | 1 | End the game immediately — highest credits wins |
 
 ---
@@ -69,7 +70,7 @@ After every action your hand is automatically refilled to 5 cards.
 - **Both players earn on every block.** If your opponent has more validators than you, publishing blocks actually benefits them more. Either catch up with your own validators or use Chain Split to cut them off.
 - **Cycle aggressively.** Use Discard and Redraw to find Transaction cards when you don't have 3 in hand. Getting to 3 Transactions fast means more blocks, more credits.
 - **Save Chain Split for when you're ahead.** It only helps you if you have more validators than your opponent, or if you plan to publish several more blocks before the game ends.
-- **Invalid Transaction is denial, not value.** Use it to remove a block that your opponent got disproportionate credit from, or to set up a Chain Reorg play.
+- **Invalid Transaction is denial, not value.** Use it to remove a block that your opponent got disproportionate credit from, or to set up a Chain Reorg play to strip the last 3 blocks.
 - **Fork when you're winning.** The Fork card ends the game instantly — use it when you're ahead in credits and running low on cards, before your opponent can catch up.
 
 ---
