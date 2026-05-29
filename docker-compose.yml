@@ -1,23 +1,23 @@
 # Blockchain: The Game — Docker Compose
 #
-# Quick start (local):
+# Quick start (local and remote):
 #   docker compose up --build
-#   Then open http://localhost in your browser.
+#   Then open http://your-server-ip in your browser.
 #
-# Remote deployment:
-#   Set VITE_WS_URL to your server's public WebSocket URL before building:
-#   VITE_WS_URL=ws://your-server-ip:3001 docker compose up --build
+# All traffic (HTTP + WebSocket) goes through port 80 via nginx.
+# No need to open port 3001 — the server is internal to Docker networking.
 #
-# The client is served by nginx on port 80.
-# The WebSocket server runs on port 3001.
+# HTTPS / custom domain:
+#   Put a reverse proxy (Caddy, Traefik, nginx) in front and set
+#   VITE_WS_URL=wss://your-domain.com as a build arg if needed.
 
 services:
   server:
     build:
       context: .
       dockerfile: packages/server/Dockerfile
-    ports:
-      - "3001:3001"
+    # Port 3001 is internal only — nginx proxies /ws to the server container.
+    # Do NOT expose 3001 externally; all client traffic goes through port 80.
     environment:
       PORT: "3001"
     restart: unless-stopped
@@ -26,12 +26,9 @@ services:
     build:
       context: .
       dockerfile: packages/client/Dockerfile
-      # VITE_WS_URL is optional. When omitted, the client automatically connects
-      # to the same hostname it was served from on port 3001, which works for
-      # local and remote access without rebuilding.
-      # Override only if your WebSocket server is on a different host:
-      #   args:
-      #     VITE_WS_URL: "wss://your-server-domain.com"
+      # VITE_WS_URL is not needed — the client connects via /ws on the same
+      # host and port it was served from (proxied by nginx to the server).
+      # Only set this if your WebSocket server is on a completely different host.
     ports:
       - "80:80"
     depends_on:

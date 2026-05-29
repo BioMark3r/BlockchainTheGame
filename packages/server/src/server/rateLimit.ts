@@ -1,6 +1,6 @@
-const WINDOW_MS = 1000        // 1-second window
-const MAX_MESSAGES = 10       // max 10 messages per second per connection
-const BAN_DURATION_MS = 5000  // 5s cooldown after exceeding limit
+const WINDOW_MS = 5000        // 5-second window
+const MAX_MESSAGES = 30       // max 30 messages per 5 seconds per connection (6/sec average)
+const BAN_DURATION_MS = 10000 // 10s cooldown after exceeding limit
 
 interface Bucket {
   count: number
