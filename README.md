@@ -79,7 +79,7 @@ After every action your hand is automatically refilled to 5 cards.
 
 The game ends when:
 - A player plays the **Fork** card, or
-- **Player 1** runs out of cards (hand and draw pile both empty)
+- **Either player** runs out of cards (hand and draw pile both empty)
 
 The player with the **most credits** at that point wins. If it is a tie, the game is declared a draw.
 
@@ -150,11 +150,7 @@ docker compose up --build
 
 Then open **http://localhost** in your browser. The WebSocket server runs on port 3001 and the client is served by nginx on port 80.
 
-**Deploying to a remote server** — the WebSocket URL is baked into the client bundle at build time, so set it before building:
-
-```bash
-VITE_WS_URL=ws://your-server-ip:3001 docker compose up --build
-```
+**Deploying to a remote server** — the client auto-detects the server from `window.location`, so the same image works on any hostname. No rebuild needed.
 
 ---
 
