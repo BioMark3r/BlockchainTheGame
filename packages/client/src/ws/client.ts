@@ -11,12 +11,15 @@ type ServerMessage =
   | { type: 'REMATCH_CREATED'; roomCode: string; playerToken: string }
   | { type: 'REMATCH_INVITE';  roomCode: string }
 
-// Connect via the same host+port that served the page, on the /ws path.
-// nginx (Docker) and Vite (dev) both proxy /ws → the WebSocket server.
-// This means only port 80/443 needs to be open — no separate port 3001.
-// Override VITE_WS_URL at build time only if you need a completely different host.
-const _proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-const WS_URL = import.meta.env.VITE_WS_URL ?? `${_proto}//${window.location.host}/ws`
+// Always derive the WebSocket URL at runtime from window.location.
+// Both Vite dev (proxy config) and Docker/nginx (location /ws) route this correctly.
+// Using window.location means nothing is baked into the bundle at build time,
+// so the same image works on any hostname without rebuilding.
+function getWsUrl(): string {
+  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${proto}//${window.location.host}/ws`
+}
+const WS_URL = getWsUrl()
 
 // ---------------------------------------------------------------------------
 // sessionStorage helpers
