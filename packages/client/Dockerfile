@@ -15,12 +15,19 @@ RUN npm ci
 COPY src/ ./src/
 COPY packages/client/ ./packages/client/
 
-# VITE_WS_URL is baked into the JS bundle at build time.
-# Override when deploying remotely, e.g.: --build-arg VITE_WS_URL=ws://your-server:3001
-ARG VITE_WS_URL=ws://localhost:3001
-ENV VITE_WS_URL=$VITE_WS_URL
+# VITE_WS_URL is intentionally left without a default.
+# When not provided, ARG values are NOT passed to RUN commands, so Vite sees
+# import.meta.env.VITE_WS_URL as undefined and the client uses
+# ws(s)://window.location.host/ws at runtime (proxied by nginx).
+# Pass --build-arg VITE_WS_URL=wss://... only if the WS server is on a
+# completely different host from the client.
+ARG VITE_WS_URL
 
-RUN npm run build --workspace=packages/client
+RUN if [ -n "$VITE_WS_URL" ]; then \
+      VITE_WS_URL="$VITE_WS_URL" npm run build --workspace=packages/client; \
+    else \
+      npm run build --workspace=packages/client; \
+    fi
 
 # Stage 2: serve the built SPA with nginx
 FROM nginx:alpine
