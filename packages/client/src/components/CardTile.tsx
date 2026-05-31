@@ -94,17 +94,17 @@ export default function CardTile({ card, isMyTurn, isSelected = false, isDiscard
             ? 'opacity-30 grayscale cursor-not-allowed'
             : 'cursor-pointer hover:scale-105 active:scale-95',
           isSelected
-            ? `ring-2 ring-blue-400 scale-105`
+            ? `ring-4 ring-blue-400 scale-110 brightness-125`
             : isDiscardSelected
-            ? `ring-2 ring-rose-500 scale-105`
+            ? `ring-4 ring-rose-400 scale-110 brightness-125`
             : '',
           playing ? 'animate-card-play' : '',
         ].join(' ')}
         style={
           isSelected
-            ? { boxShadow: `0 0 14px rgba(59,130,246,0.6)` }
+            ? { boxShadow: '0 0 24px rgba(59,130,246,0.9)' }
             : isDiscardSelected
-            ? { boxShadow: `0 0 14px rgba(244,63,94,0.6)` }
+            ? { boxShadow: '0 0 24px rgba(244,63,94,0.9)' }
             : undefined
         }
       >
@@ -120,6 +120,12 @@ export default function CardTile({ card, isMyTurn, isSelected = false, isDiscard
         <span className="text-[8px] sm:text-[9px] text-gray-500 font-mono w-full text-right">
           {card.id.slice(-4)}
         </span>
+
+        {(isSelected || isDiscardSelected) && (
+          <div className={`absolute inset-0 rounded-xl pointer-events-none ${
+            isSelected ? 'bg-blue-400/15' : 'bg-rose-400/15'
+          }`} />
+        )}
 
         {isSelected && (
           <span className="absolute top-1 right-1 text-blue-400 text-[10px] font-bold">✓</span>

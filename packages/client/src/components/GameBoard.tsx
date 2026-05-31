@@ -110,6 +110,42 @@ export default function GameBoard({ onReturnToLobby }: Props) {
         localPlayerId={localPlayerId}
       />
 
+      {/* Credits scorebar */}
+      {(() => {
+        const total = localPlayer.credits + opponentPlayer.credits
+        const localPct = total === 0 ? 50 : Math.round((localPlayer.credits / total) * 100)
+        const oppPct = 100 - localPct
+        const localName = displayName(localPlayer.id, localPlayer.isCpu, playerNames)
+        const oppName = displayName(opponentPlayer.id, opponentPlayer.isCpu, playerNames)
+        const localAhead = localPlayer.credits > opponentPlayer.credits
+        const tied = localPlayer.credits === opponentPlayer.credits
+
+        return (
+          <div className="bg-[#0a0e1a] border border-[#1e2d4a] rounded-xl px-4 py-3">
+            <div className="flex justify-between items-center mb-2 text-xs">
+              <span className={`font-bold ${localAhead && !tied ? 'text-green-400' : 'text-gray-400'}`}>
+                {localAhead && !tied ? '▲ ' : ''}{localName} — {localPlayer.credits} cr
+              </span>
+              <span className="text-gray-600 text-[10px] uppercase tracking-wider">Credits</span>
+              <span className={`font-bold ${!localAhead && !tied ? 'text-orange-400' : 'text-gray-400'}`}>
+                {opponentPlayer.credits} cr — {oppName}{!localAhead && !tied ? ' ▲' : ''}
+              </span>
+            </div>
+            <div className="flex h-2 rounded-full overflow-hidden gap-px">
+              <div
+                className={`transition-all duration-500 rounded-l-full ${localAhead && !tied ? 'bg-green-500' : tied ? 'bg-blue-500' : 'bg-gray-600'}`}
+                style={{ width: `${localPct}%` }}
+              />
+              <div
+                className={`transition-all duration-500 rounded-r-full ${!localAhead && !tied ? 'bg-orange-500' : tied ? 'bg-blue-500' : 'bg-gray-700'}`}
+                style={{ width: `${oppPct}%` }}
+              />
+            </div>
+            {tied && total > 0 && <p className="text-center text-[10px] text-blue-400 mt-1">Tied</p>}
+          </div>
+        )
+      })()}
+
       {/* Chain */}
       <ChainView
         chain={chain}

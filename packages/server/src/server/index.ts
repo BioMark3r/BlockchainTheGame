@@ -4,10 +4,13 @@ import { RoomManager } from './rooms.js'
 import { ReconnectManager } from './reconnect.js'
 import { createMessageHandler } from './handlers.js'
 import { checkRateLimit } from './rateLimit.js'
+import { handleLeaderboardRoute } from './leaderboard.js'
 
 const PORT = parseInt(process.env['PORT'] ?? '3001', 10)
 
-const httpServer = createServer((_req, res) => {
+const httpServer = createServer(async (req, res) => {
+  const handled = await handleLeaderboardRoute(req, res)
+  if (handled) return
   res.writeHead(200, { 'Content-Type': 'text/plain' })
   res.end('Blockchain: The Game — WebSocket server\n')
 })

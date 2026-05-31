@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { GameState, PlayerId, TurnAction } from '@shared/types'
 import { deriveLogEntries } from '../utils/gameLog'
+import type { AuthUser } from '../utils/auth'
 
 export interface ClientMessage {
   type: 'PLAY_CARD' | 'PUBLISH_BLOCK' | 'DISCARD_REDRAW'
@@ -27,6 +28,7 @@ interface GameStore {
   isRematching: boolean
   displayName: string
   playerNames: Record<string, string>
+  authUser: AuthUser | null
 
   setGameState: (state: GameState) => void
   setLocalPlayerId: (id: PlayerId) => void
@@ -41,6 +43,7 @@ interface GameStore {
   clearLog: () => void
   setDisplayName: (name: string) => void
   setPlayerNames: (names: Record<string, string>) => void
+  setAuthUser: (user: AuthUser | null) => void
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -55,6 +58,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   isRematching: false,
   displayName: '',
   playerNames: {},
+  authUser: null,
 
   setGameState: (newState) => {
     const prev = get().gameState
@@ -75,6 +79,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   clearLog: () => set({ gameLog: [] }),
   setDisplayName: (name) => set({ displayName: name }),
   setPlayerNames: (names) => set({ playerNames: names }),
+  setAuthUser: (user) => set({ authUser: user }),
 
   send: (msg) => {
     const { ws } = get()

@@ -4,6 +4,7 @@ import { useGameStore } from '../store/gameStore'
 import { computeGameStats, type PlayerStats } from '../utils/gameStats'
 import { displayName } from '../utils/display'
 import { recordResult } from '../utils/scoreboard'
+import { apiRecordResult } from '../utils/auth'
 
 interface Props {
   gameState: GameState
@@ -23,6 +24,11 @@ export default function GameOverModal({ gameState, localPlayerId, onPlayAgain }:
 
   useEffect(() => {
     recordResult(localPlayerId, gameState.winner)
+    const authUser = useGameStore.getState().authUser
+    if (authUser) {
+      const result = gameState.winner === null ? 'draw' : gameState.winner === localPlayerId ? 'win' : 'loss'
+      apiRecordResult(result).catch(() => {}) // fire and forget
+    }
   }, [])
 
   function handleRematch() {

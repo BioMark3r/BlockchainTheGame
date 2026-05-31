@@ -6,3 +6,6 @@ dist/
 
 # Docker
 .dockerignore
+
+# Leaderboard user data
+packages/server/data/users.json

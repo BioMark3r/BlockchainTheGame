@@ -3,6 +3,7 @@ import type { Card, PlayerId } from '@shared/types'
 import { CardType } from '@shared/types'
 import CardTile from './CardTile'
 import { useGameStore } from '../store/gameStore'
+import { getHint } from '../utils/hint'
 
 interface Props {
   hand: Card[]
@@ -13,10 +14,12 @@ interface Props {
 
 export default function PlayerHand({ hand, localPlayerId, isMyTurn, onInvalidTxPending }: Props) {
   const send = useGameStore((s) => s.send)
+  const gameState = useGameStore((s) => s.gameState)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [discardSelectMode, setDiscardSelectMode] = useState(false)
   const [discardSelectedIds, setDiscardSelectedIds] = useState<string[]>([])
   const [pendingInvalidTxCardId, setPendingInvalidTxCardId] = useState<string | null>(null)
+  const [showHint, setShowHint] = useState(false)
 
   function setPendingInvalidTx(cardId: string | null) {
     setPendingInvalidTxCardId(cardId)
@@ -29,6 +32,10 @@ export default function PlayerHand({ hand, localPlayerId, isMyTurn, onInvalidTxP
       onInvalidTxPending?.(null)
     }
   }, [hand, pendingInvalidTxCardId])
+
+  useEffect(() => {
+    if (!isMyTurn) setShowHint(false)
+  }, [isMyTurn])
 
   function handlePassTurn() {
     send({ type: 'ACTION', action: { type: 'DISCARD_REDRAW', playerId: localPlayerId, cardIdsToDiscard: [] } })
@@ -151,6 +158,16 @@ export default function PlayerHand({ hand, localPlayerId, isMyTurn, onInvalidTxP
         {isMyTurn && !discardSelectMode && (
           <div className="ml-auto flex gap-2">
             <button
+              onClick={() => setShowHint(h => !h)}
+              className={`text-xs px-3 py-1.5 rounded-lg transition-colors border ${
+                showHint
+                  ? 'bg-yellow-500/10 border-yellow-500/50 text-yellow-300'
+                  : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-yellow-300 hover:border-yellow-600'
+              }`}
+            >
+              💡 Hint
+            </button>
+            <button
               onClick={handlePassTurn}
               className="text-xs text-gray-600 hover:text-gray-400 border border-gray-700 hover:border-gray-500 px-3 py-1.5 rounded-lg transition-colors"
             >
@@ -186,6 +203,18 @@ export default function PlayerHand({ hand, localPlayerId, isMyTurn, onInvalidTxP
           </>
         )}
       </div>
+
+      {showHint && gameState && (() => {
+        const hint = getHint(hand, gameState, localPlayerId)
+        const borderColor = hint.priority === 'high' ? 'border-green-600/50 bg-green-950/30'
+          : hint.priority === 'medium' ? 'border-blue-600/50 bg-blue-950/30'
+          : 'border-gray-600/50 bg-gray-800/30'
+        return (
+          <div className={`mt-2 rounded-xl border px-4 py-2.5 text-sm text-gray-200 leading-snug ${borderColor}`}>
+            <span className="mr-2">{hint.icon}</span>{hint.text}
+          </div>
+        )
+      })()}
 
       {hand.length === 0 ? (
         <div className="text-gray-600 text-sm text-center py-4">No cards in hand</div>
