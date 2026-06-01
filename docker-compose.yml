@@ -16,10 +16,13 @@ services:
     build:
       context: .
       dockerfile: packages/server/Dockerfile
-    # Port 3001 is internal only — nginx proxies /ws to the server container.
+    # Port 3001 is internal only — nginx proxies /ws and /api to the server container.
     # Do NOT expose 3001 externally; all client traffic goes through port 80.
     environment:
       PORT: "3001"
+    volumes:
+      # Persist user accounts and leaderboard data across container restarts
+      - server-data:/app/packages/server/data
     restart: unless-stopped
 
   client:
@@ -34,3 +37,6 @@ services:
     depends_on:
       - server
     restart: unless-stopped
+
+volumes:
+  server-data:   # named volume — leaderboard user data persists across restarts
