@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useGameStore } from '../store/gameStore'
 import ChainView from './ChainView'
 import PlayerZone from './PlayerZone'
@@ -8,6 +8,7 @@ import HowToPlayModal from './HowToPlayModal'
 import TurnTimer from './TurnTimer'
 import type { PlayerState } from '@shared/types'
 import { displayName } from '../utils/display'
+import { soundYourTurn, soundBlockPublish, soundChainReorg, soundFork } from '../utils/sounds'
 
 interface Props {
   onReturnToLobby: () => void
@@ -19,9 +20,39 @@ export default function GameBoard({ onReturnToLobby }: Props) {
   const send = useGameStore((s) => s.send)
   const error = useGameStore((s) => s.error)
   const playerNames = useGameStore((s) => s.playerNames)
+  const cpuDifficulty = useGameStore((s) => s.cpuDifficulty)
   const [invalidTxCardId, setInvalidTxCardId] = useState<string | null>(null)
   const [confirmingConcede, setConfirmingConcede] = useState(false)
   const [showHowToPlay, setShowHowToPlay] = useState(false)
+
+  // Sound effect hooks
+  const prevTurnRef = useRef<string | null>(null)
+  const prevChainLenRef = useRef<number>(0)
+  const prevPhaseRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!gameState) return
+    // Your turn ping
+    if (gameState.currentTurn !== prevTurnRef.current && gameState.currentTurn === localPlayerId) {
+      soundYourTurn()
+    }
+    prevTurnRef.current = gameState.currentTurn
+
+    // Block published
+    if (gameState.chain.length > prevChainLenRef.current && prevChainLenRef.current > 0) {
+      soundBlockPublish()
+    } else if (gameState.chain.length < prevChainLenRef.current) {
+      // Chain reorg
+      soundChainReorg()
+    }
+    prevChainLenRef.current = gameState.chain.length
+
+    // Game ended
+    if (gameState.phase === 'ended' && prevPhaseRef.current === 'playing') {
+      soundFork()
+    }
+    prevPhaseRef.current = gameState.phase
+  }, [gameState, localPlayerId])
 
   if (!gameState || !localPlayerId) {
     return (
@@ -38,10 +69,14 @@ export default function GameBoard({ onReturnToLobby }: Props) {
 
   const isMyTurn = currentTurn === localPlayerId
 
+  const diffLabel = cpuDifficulty === 'easy' ? '🟢 Easy' : cpuDifficulty === 'hard' ? '🔴 Hard' : cpuDifficulty === 'normal' ? '🟡 Normal' : null
+
   const turnBanner = isMyTurn ? (
     <span className="text-green-400 font-bold tracking-wide">▶ YOUR TURN</span>
   ) : opponentPlayer.isCpu ? (
-    <span className="text-blue-400 animate-pulse font-medium">🤖 CPU is thinking…</span>
+    <span className="text-blue-400 animate-pulse font-medium">
+      🤖 CPU{diffLabel ? <span className="text-xs ml-1.5 opacity-70 not-italic font-normal">{diffLabel}</span> : ''} is thinking…
+    </span>
   ) : (
     <span className="text-gray-500">
       ⏳ <span className="text-white">{displayName(opponentPlayer.id, opponentPlayer.isCpu, playerNames)}</span>'s turn

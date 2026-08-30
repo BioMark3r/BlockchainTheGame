@@ -442,31 +442,38 @@ describe('Out of cards fork conditions', () => {
     expect(final.forkReason).toBe('player1_out_of_cards')
   })
 
-  it('exhausting player2 hand + draw pile also triggers a fork', () => {
+  it('exhausting player2 hand + draw pile does NOT trigger a fork (only player1 running out does)', () => {
     let s = createGame('player1', 'player2')
 
     // Drain player2 by discarding all hand cards on every player2 turn
+    // while player1 keeps passing (so player1 never runs out)
+    let p2Exhausted = false
     for (let iter = 0; iter < 200; iter++) {
-      const p2 = getPlayer(s, 'player2')
-      if (p2.hand.length === 0 && p2.drawPile.length === 0) break
       if (s.phase === 'ended') break
+      const p2 = getPlayer(s, 'player2')
 
       if (s.currentTurn === 'player2') {
         const allIds = p2.hand.map((c) => c.id)
         const r = applyAction(s, { type: 'DISCARD_REDRAW', playerId: 'player2', cardIdsToDiscard: allIds })
         if (!r.success) break
         s = r.state
+        const p2After = getPlayer(s, 'player2')
+        if (p2After.hand.length === 0 && p2After.drawPile.length === 0) {
+          p2Exhausted = true
+          break
+        }
       } else {
-        // Player1 passes
+        // Player1 passes without discarding to keep their deck intact
         const r = applyAction(s, { type: 'DISCARD_REDRAW', playerId: 'player1', cardIdsToDiscard: [] })
         if (!r.success) break
         s = r.state
       }
     }
 
-    // Game should have ended — player2 ran out of cards
-    expect(s.phase).toBe('ended')
-    expect(s.forkReason).toBe('player2_out_of_cards')
+    // Player2 ran out, but game should still be playing (only player1 running out forks)
+    expect(p2Exhausted).toBe(true)
+    expect(s.phase).toBe('playing')
+    expect(s.forkReason).toBeNull()
   })
 })
 

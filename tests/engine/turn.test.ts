@@ -339,7 +339,7 @@ describe('Fork condition — player1 out of cards', () => {
     expect(result.state.forkReason).toBe('player1_out_of_cards')
   })
 
-  it('DOES trigger fork when player2 plays their last card', () => {
+  it('does NOT trigger fork when player2 plays their last card (only player1 running out forks)', () => {
     const card = makeCard(CardType.VALIDATOR, 'v-1')
     const state = makeState({
       currentTurn: 'player2',
@@ -350,8 +350,8 @@ describe('Fork condition — player1 out of cards', () => {
     })
     const result = applyAction(state, { type: 'PLAY_CARD', playerId: 'player2', cardId: 'v-1' })
     expect(result.success).toBe(true)
-    expect(result.state.phase).toBe('ended')
-    expect(result.state.forkReason).toBe('player2_out_of_cards')
+    expect(result.state.phase).toBe('playing')
+    expect(result.state.forkReason).toBeNull()
   })
 
   it('player1 still has draw pile — no fork', () => {

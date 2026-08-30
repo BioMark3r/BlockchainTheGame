@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { connectWebSocket } from '../ws/client'
+import { connectWebSocket, attemptRejoin } from '../ws/client'
 import { useGameStore } from '../store/gameStore'
 import HowToPlayModal from './HowToPlayModal'
 import type { CpuDifficulty } from '@shared/types'
@@ -15,6 +15,8 @@ export default function RoomLobby() {
   const [vsCpu, setVsCpu] = useState(false)
   const [difficulty, setDifficulty] = useState<CpuDifficulty>('normal')
   const [board, setBoard] = useState(() => loadScoreboard())
+  const [hasRejoinable, setHasRejoinable] = useState(false)
+  const setCpuDifficulty = useGameStore((s) => s.setCpuDifficulty)
 
   // Auth state
   const authUser = useGameStore((s) => s.authUser)
@@ -33,6 +35,11 @@ export default function RoomLobby() {
     // Restore auth session
     const saved = loadAuth()
     if (saved) setAuthUser(saved)
+    // Check if there's a rejoinable session in sessionStorage
+    setHasRejoinable(
+      !!sessionStorage.getItem('btg_roomCode') &&
+      !!sessionStorage.getItem('btg_playerToken')
+    )
   }, [])
   const [showHowToPlay, setShowHowToPlay] = useState(false)
   const error = useGameStore((s) => s.error)
@@ -82,7 +89,14 @@ export default function RoomLobby() {
 
   function handleCreate() {
     clearError()
+    setCpuDifficulty(vsCpu ? difficulty : null)
     connectWebSocket('create', '', vsCpu, displayName.trim() || 'Player 1', difficulty)
+  }
+
+  function handleRejoin() {
+    clearError()
+    const ok = attemptRejoin()
+    if (!ok) setHasRejoinable(false)
   }
 
   function handleJoin() {
@@ -116,18 +130,27 @@ export default function RoomLobby() {
                     <th className="text-center pb-2 text-green-500">W</th>
                     <th className="text-center pb-2 text-red-500">L</th>
                     <th className="text-center pb-2 text-gray-400">D</th>
+                    <th className="text-center pb-2 text-blue-400">Win%</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {leaderboardData.map((row, i) => (
-                    <tr key={row.username} className={`border-b border-gray-800/50 last:border-0 ${authUser?.username === row.username ? 'text-blue-300' : 'text-gray-300'}`}>
-                      <td className="py-1.5 text-gray-600 text-xs">{i + 1}</td>
-                      <td className="py-1.5 font-medium">{row.username}{authUser?.username === row.username ? ' (you)' : ''}</td>
-                      <td className="py-1.5 text-center text-green-400 font-bold">{row.wins}</td>
-                      <td className="py-1.5 text-center text-red-400 font-bold">{row.losses}</td>
-                      <td className="py-1.5 text-center text-gray-400">{row.draws}</td>
-                    </tr>
-                  ))}
+                  {leaderboardData.map((row, i) => {
+                    const winPct = row.gamesPlayed >= 3
+                      ? Math.round((row.wins / row.gamesPlayed) * 100)
+                      : null
+                    return (
+                      <tr key={row.username} className={`border-b border-gray-800/50 last:border-0 ${authUser?.username === row.username ? 'text-blue-300' : 'text-gray-300'}`}>
+                        <td className="py-1.5 text-gray-600 text-xs">{i + 1}</td>
+                        <td className="py-1.5 font-medium">{row.username}{authUser?.username === row.username ? ' (you)' : ''}</td>
+                        <td className="py-1.5 text-center text-green-400 font-bold">{row.wins}</td>
+                        <td className="py-1.5 text-center text-red-400 font-bold">{row.losses}</td>
+                        <td className="py-1.5 text-center text-gray-400">{row.draws}</td>
+                        <td className="py-1.5 text-center text-blue-300 font-semibold">
+                          {winPct !== null ? `${winPct}%` : <span className="text-gray-600 text-xs">—</span>}
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             )}
@@ -153,6 +176,22 @@ export default function RoomLobby() {
         {error && (
           <div className="mb-4 bg-red-900/60 border border-red-600 text-red-300 rounded-lg px-4 py-2 text-sm">
             {error}
+          </div>
+        )}
+
+        {/* Rejoin banner */}
+        {hasRejoinable && !roomCode && (
+          <div className="mb-4 bg-blue-950/60 border border-blue-600/60 rounded-xl px-4 py-3 flex items-center justify-between">
+            <div>
+              <div className="text-blue-300 text-sm font-semibold">🔄 Game in progress</div>
+              <div className="text-gray-500 text-xs mt-0.5">You may have disconnected from an active game.</div>
+            </div>
+            <button
+              onClick={handleRejoin}
+              className="ml-4 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors flex-shrink-0"
+            >
+              Rejoin
+            </button>
           </div>
         )}
 

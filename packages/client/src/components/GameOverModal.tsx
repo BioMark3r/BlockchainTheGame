@@ -5,6 +5,7 @@ import { computeGameStats, type PlayerStats } from '../utils/gameStats'
 import { displayName } from '../utils/display'
 import { recordResult } from '../utils/scoreboard'
 import { apiRecordResult } from '../utils/auth'
+import { soundWin, soundLose } from '../utils/sounds'
 
 interface Props {
   gameState: GameState
@@ -27,7 +28,14 @@ export default function GameOverModal({ gameState, localPlayerId, onPlayAgain }:
     const authUser = useGameStore.getState().authUser
     if (authUser) {
       const result = gameState.winner === null ? 'draw' : gameState.winner === localPlayerId ? 'win' : 'loss'
-      apiRecordResult(result).catch(() => {}) // fire and forget
+      apiRecordResult(result).catch(() => {})
+    }
+    if (gameState.winner === null) {
+      // draw — no sound
+    } else if (gameState.winner === localPlayerId) {
+      soundWin()
+    } else {
+      soundLose()
     }
   }, [])
 

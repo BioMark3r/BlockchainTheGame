@@ -42,9 +42,8 @@ function checkForkCondition(state: GameState, actingPlayerId: PlayerId): GameSta
   const actor = state.players.find((p) => p.id === actingPlayerId)
   if (!actor) return state
 
-  if (actor.hand.length === 0 && actor.drawPile.length === 0) {
-    const reason = actingPlayerId === 'player1' ? 'player1_out_of_cards' : 'player2_out_of_cards'
-    const endedState: GameState = { ...state, phase: 'ended', forkReason: reason }
+  if (actor.hand.length === 0 && actor.drawPile.length === 0 && actingPlayerId === 'player1') {
+    const endedState: GameState = { ...state, phase: 'ended', forkReason: 'player1_out_of_cards' }
     return { ...endedState, winner: getWinner(endedState) }
   }
 

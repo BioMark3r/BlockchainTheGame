@@ -4,6 +4,7 @@ import { CardType } from '@shared/types'
 import CardTile from './CardTile'
 import { useGameStore } from '../store/gameStore'
 import { getHint } from '../utils/hint'
+import { soundCardClick, soundValidatorPlaced, soundSpecialCard } from '../utils/sounds'
 
 interface Props {
   hand: Card[]
@@ -75,12 +76,22 @@ export default function PlayerHand({ hand, localPlayerId, isMyTurn, onInvalidTxP
     }
 
     if (card.type === CardType.TRANSACTION) {
+      soundCardClick()
       setPendingInvalidTx(null)
       toggleSelect(card.id)
     } else if (card.type === CardType.INVALID_TRANSACTION) {
+      soundSpecialCard()
       setSelectedIds([])
       setPendingInvalidTx(card.id)
+    } else if (card.type === CardType.VALIDATOR) {
+      soundValidatorPlaced()
+      setPendingInvalidTx(null)
+      send({
+        type: 'ACTION',
+        action: { type: 'PLAY_CARD', playerId: localPlayerId, cardId: card.id },
+      })
     } else {
+      soundSpecialCard()
       setPendingInvalidTx(null)
       send({
         type: 'ACTION',

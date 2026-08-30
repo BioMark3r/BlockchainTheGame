@@ -131,8 +131,19 @@ export async function handleLeaderboardRoute(req: IncomingMessage, res: ServerRe
     const users = loadUsers()
     const board = users
       .filter(u => u.stats.gamesPlayed > 0)
-      .map(u => ({ username: u.username, ...u.stats }))
-      .sort((a, b) => b.wins - a.wins || b.gamesPlayed - a.gamesPlayed)
+      .map(u => ({
+        username: u.username,
+        ...u.stats,
+        winRate: u.stats.gamesPlayed >= 3
+          ? u.stats.wins / u.stats.gamesPlayed
+          : 0,
+      }))
+      .sort((a, b) =>
+        b.winRate !== a.winRate
+          ? b.winRate - a.winRate
+          : b.wins - a.wins || b.gamesPlayed - a.gamesPlayed
+      )
+      .map(({ winRate: _wr, ...rest }) => rest)
       .slice(0, 20)
     json(res, 200, { leaderboard: board })
     return true

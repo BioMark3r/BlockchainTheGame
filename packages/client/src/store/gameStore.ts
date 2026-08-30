@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { GameState, PlayerId, TurnAction } from '@shared/types'
+import type { GameState, PlayerId, TurnAction, CpuDifficulty } from '@shared/types'
 import { deriveLogEntries } from '../utils/gameLog'
 import type { AuthUser } from '../utils/auth'
 
@@ -29,6 +29,7 @@ interface GameStore {
   displayName: string
   playerNames: Record<string, string>
   authUser: AuthUser | null
+  cpuDifficulty: CpuDifficulty | null
 
   setGameState: (state: GameState) => void
   setLocalPlayerId: (id: PlayerId) => void
@@ -44,6 +45,7 @@ interface GameStore {
   setDisplayName: (name: string) => void
   setPlayerNames: (names: Record<string, string>) => void
   setAuthUser: (user: AuthUser | null) => void
+  setCpuDifficulty: (d: CpuDifficulty | null) => void
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -59,6 +61,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   displayName: '',
   playerNames: {},
   authUser: null,
+  cpuDifficulty: null,
 
   setGameState: (newState) => {
     const prev = get().gameState
@@ -80,6 +83,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setDisplayName: (name) => set({ displayName: name }),
   setPlayerNames: (names) => set({ playerNames: names }),
   setAuthUser: (user) => set({ authUser: user }),
+  setCpuDifficulty: (d) => set({ cpuDifficulty: d }),
 
   send: (msg) => {
     const { ws } = get()
