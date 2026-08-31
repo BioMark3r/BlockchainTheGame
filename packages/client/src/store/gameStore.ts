@@ -8,6 +8,13 @@ export interface ClientMessage {
   payload: TurnAction
 }
 
+export interface EmoteBubble {
+  id: string
+  emote: string
+  senderName: string
+  x: number  // 0–100 percent
+}
+
 export interface ChatMessage {
   id: string
   senderId: string
@@ -40,6 +47,7 @@ interface GameStore {
   authUser: AuthUser | null
   cpuDifficulty: CpuDifficulty | null
   chatMessages: ChatMessage[]
+  emoteBubbles: EmoteBubble[]
 
   setGameState: (state: GameState) => void
   setLocalPlayerId: (id: PlayerId) => void
@@ -59,6 +67,8 @@ interface GameStore {
   setCpuDifficulty: (d: CpuDifficulty | null) => void
   addChatMessage: (msg: ChatMessage) => void
   clearChat: () => void
+  addEmoteBubble: (bubble: EmoteBubble) => void
+  removeEmoteBubble: (id: string) => void
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -77,6 +87,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   authUser: null,
   cpuDifficulty: null,
   chatMessages: [],
+  emoteBubbles: [],
 
   setGameState: (newState) => {
     const prev = get().gameState
@@ -102,6 +113,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setCpuDifficulty: (d) => set({ cpuDifficulty: d }),
   addChatMessage: (msg) => set((s) => ({ chatMessages: [...s.chatMessages.slice(-199), msg] })),
   clearChat: () => set({ chatMessages: [] }),
+  addEmoteBubble: (bubble) => set((s) => ({ emoteBubbles: [...s.emoteBubbles, bubble] })),
+  removeEmoteBubble: (id) => set((s) => ({ emoteBubbles: s.emoteBubbles.filter((b) => b.id !== id) })),
 
   send: (msg) => {
     const { ws } = get()

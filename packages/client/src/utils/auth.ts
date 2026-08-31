@@ -55,14 +55,35 @@ export async function apiLogin(username: string, password: string): Promise<Auth
   return { username: data.username, token: data.token, stats: data.stats }
 }
 
-export async function apiRecordResult(result: 'win' | 'loss' | 'draw'): Promise<void> {
+export async function apiRecordResult(result: 'win' | 'loss' | 'draw', opts?: { replayId?: string; opponentName?: string }): Promise<void> {
   const token = getToken()
   if (!token) return
   await fetch(`${SERVER_BASE}/api/record-result`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-    body: JSON.stringify({ result }),
+    body: JSON.stringify({ result, ...opts }),
   })
+}
+
+export interface GameHistoryEntry {
+  ts: string
+  result: 'win' | 'loss' | 'draw'
+  replayId?: string
+  opponentName?: string
+}
+
+export interface ProfileData {
+  username: string
+  stats: { wins: number; losses: number; draws: number; gamesPlayed: number }
+  history: GameHistoryEntry[]
+  createdAt: string
+}
+
+export async function apiProfile(username: string): Promise<ProfileData> {
+  const res = await fetch(`${SERVER_BASE}/api/profile/${encodeURIComponent(username)}`)
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.error ?? 'Profile not found')
+  return data as ProfileData
 }
 
 export async function apiLeaderboard(): Promise<Array<{ username: string; wins: number; losses: number; draws: number; gamesPlayed: number }>> {

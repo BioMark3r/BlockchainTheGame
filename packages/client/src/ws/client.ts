@@ -11,7 +11,8 @@ type ServerMessage =
   | { type: 'ERROR';           message: string }
   | { type: 'REMATCH_CREATED'; roomCode: string; playerToken: string }
   | { type: 'REMATCH_INVITE';  roomCode: string }
-  | { type: 'CHAT_MSG';        senderId: string; senderName: string; text: string; ts: number }
+  | { type: 'CHAT_MSG';          senderId: string; senderName: string; text: string; ts: number }
+  | { type: 'EMOTE_BROADCAST';   emote: string; senderName: string }
 
 // Always derive the WebSocket URL at runtime from window.location.
 // Both Vite dev (proxy config) and Docker/nginx (location /ws) route this correctly.
@@ -115,6 +116,13 @@ export function connectWebSocket(action: 'create' | 'join', roomCode: string, vs
       case 'CHAT_MSG':
         store.addChatMessage({ id: randomUUID(), senderId: msg.senderId, senderName: msg.senderName, text: msg.text, ts: msg.ts })
         break
+      case 'EMOTE_BROADCAST': {
+        const id = randomUUID()
+        const x = Math.floor(Math.random() * 70) + 10
+        store.addEmoteBubble({ id, emote: msg.emote, senderName: msg.senderName, x })
+        setTimeout(() => store.removeEmoteBubble(id), 2500)
+        break
+      }
     }
   })
 
@@ -176,6 +184,13 @@ export function connectSpectator(roomCode: string): WebSocket {
       case 'CHAT_MSG':
         store.addChatMessage({ id: randomUUID(), senderId: msg.senderId, senderName: msg.senderName, text: msg.text, ts: msg.ts })
         break
+      case 'EMOTE_BROADCAST': {
+        const id = randomUUID()
+        const x = Math.floor(Math.random() * 70) + 10
+        store.addEmoteBubble({ id, emote: msg.emote, senderName: msg.senderName, x })
+        setTimeout(() => store.removeEmoteBubble(id), 2500)
+        break
+      }
       default:
         break
     }

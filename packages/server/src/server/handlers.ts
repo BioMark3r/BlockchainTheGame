@@ -6,6 +6,7 @@ import type { Room, RoomPlayer } from './rooms.js'
 import { RoomManager } from './rooms.js'
 import { ReconnectManager } from './reconnect.js'
 import { triggerCpuTurn } from './ai.js'
+import { saveReplay } from './replay.js'
 
 // ---------------------------------------------------------------------------
 // Message shapes (incoming)
@@ -19,8 +20,11 @@ interface ConcedeMsg     { type: 'CONCEDE' }
 interface RematchMsg     { type: 'REMATCH' }
 interface SpectateMsg    { type: 'SPECTATE';     roomCode: string }
 interface ChatMsg        { type: 'CHAT';          text: string }
+interface EmoteMsg       { type: 'EMOTE';         emote: string }
 
-type IncomingMsg = CreateRoomMsg | JoinRoomMsg | RejoinMsg | ActionMsg | ConcedeMsg | RematchMsg | SpectateMsg | ChatMsg
+type IncomingMsg = CreateRoomMsg | JoinRoomMsg | RejoinMsg | ActionMsg | ConcedeMsg | RematchMsg | SpectateMsg | ChatMsg | EmoteMsg
+
+const VALID_EMOTES = new Set(['🎉', '😤', '🤔', '💀', '🔥', '👑'])
 
 // ---------------------------------------------------------------------------
 // Turn timer
@@ -84,6 +88,20 @@ function getDisplayNames(room: Room): Record<string, string> {
     if (p) names[p.playerId] = p.displayName
   }
   return names
+}
+
+/** Persist completed game replay to disk */
+function persistGameEnd(room: Room): void {
+  if (!room.gameState || !room.initialPlayerIds) return
+  saveReplay({
+    roomCode: room.code,
+    initialPlayerIds: room.initialPlayerIds,
+    isCpuGame: room.cpuSlot,
+    displayNames: getDisplayNames(room),
+    actionLog: room.actionLog,
+    finalState: room.gameState,
+    savedAt: new Date().toISOString(),
+  })
 }
 
 /** Broadcast the current game state to all human players and spectators in a room */
@@ -295,6 +313,7 @@ export function handlePlayerAction(
   // Schedule room cleanup after game ends (cancel reconnect timers first)
   if (result.state.phase === 'ended') {
     clearTurnTimer(room)
+    persistGameEnd(room)
     setTimeout(() => {
       reconnect.cancelAllForRoom(room.code)
       rooms.destroyRoom(room.code)
@@ -371,6 +390,7 @@ export function handleConcede(
   }
 
   clearTurnTimer(room)
+  persistGameEnd(room)
   broadcastState(room, room.gameState!)
 
   setTimeout(() => {
@@ -493,6 +513,46 @@ export function handleChat(
   }
 }
 
+export function handleEmote(
+  ws: WebSocket,
+  msg: EmoteMsg,
+  myToken: string | null,
+  isSpectator: boolean,
+  rooms: RoomManager,
+): void {
+  if (!VALID_EMOTES.has(msg.emote)) return
+
+  let foundRoom: Room | undefined
+  let senderName = 'Spectator'
+
+  if (isSpectator) {
+    for (const [, room] of rooms.allRooms()) {
+      if (room.spectators.includes(ws)) { foundRoom = room; break }
+    }
+  } else if (myToken) {
+    for (const [, room] of rooms.allRooms()) {
+      for (const p of room.players) {
+        if (p && p.playerToken === myToken) {
+          foundRoom = room
+          senderName = p.displayName
+          break
+        }
+      }
+      if (foundRoom) break
+    }
+  }
+
+  if (!foundRoom) return
+
+  const payload = { type: 'EMOTE_BROADCAST', emote: msg.emote, senderName }
+  for (const p of foundRoom.players) {
+    if (p && !p.isCpu && p.ws) send(p.ws, payload)
+  }
+  for (const sw of foundRoom.spectators) {
+    send(sw, payload)
+  }
+}
+
 export function handleSpectate(
   ws: WebSocket,
   msg: SpectateMsg,
@@ -604,6 +664,10 @@ export function createMessageHandler(
       }
       case 'CHAT': {
         handleChat(ws, msg, myToken, isSpectator, rooms)
+        break
+      }
+      case 'EMOTE': {
+        handleEmote(ws, msg, myToken, isSpectator, rooms)
         break
       }
       default: {

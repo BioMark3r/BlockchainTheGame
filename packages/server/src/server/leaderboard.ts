@@ -6,12 +6,20 @@ import type { IncomingMessage, ServerResponse } from 'http'
 const DATA_DIR = join(process.cwd(), 'packages/server/data')
 const USERS_FILE = join(DATA_DIR, 'users.json')
 
+interface GameHistoryEntry {
+  ts: string
+  result: 'win' | 'loss' | 'draw'
+  replayId?: string
+  opponentName?: string
+}
+
 interface UserRecord {
   username: string
   passwordHash: string
   salt: string
   token: string | null
   stats: { wins: number; losses: number; draws: number; gamesPlayed: number }
+  history: GameHistoryEntry[]
   createdAt: string
 }
 
@@ -87,6 +95,7 @@ export async function handleLeaderboardRoute(req: IncomingMessage, res: ServerRe
       salt,
       token,
       stats: { wins: 0, losses: 0, draws: 0, gamesPlayed: 0 },
+      history: [],
       createdAt: new Date().toISOString(),
     }
     users.push(newUser)
@@ -113,7 +122,7 @@ export async function handleLeaderboardRoute(req: IncomingMessage, res: ServerRe
   if (req.method === 'POST' && url === '/api/record-result') {
     const authHeader = req.headers['authorization'] ?? ''
     const token = authHeader.replace('Bearer ', '')
-    const body = await readBody(req) as { result?: 'win' | 'loss' | 'draw' }
+    const body = await readBody(req) as { result?: 'win' | 'loss' | 'draw'; replayId?: string; opponentName?: string }
     const users = loadUsers()
     const user = users.find(u => u.token === token)
     if (!user) { json(res, 401, { error: 'Unauthorized' }); return true }
@@ -121,6 +130,11 @@ export async function handleLeaderboardRoute(req: IncomingMessage, res: ServerRe
     if (body.result === 'win') user.stats.wins++
     else if (body.result === 'loss') user.stats.losses++
     else user.stats.draws++
+    if (!user.history) user.history = []
+    const entry: GameHistoryEntry = { ts: new Date().toISOString(), result: body.result ?? 'draw' }
+    if (body.replayId) entry.replayId = body.replayId
+    if (body.opponentName) entry.opponentName = body.opponentName
+    user.history = [entry, ...user.history].slice(0, 20)
     saveUsers(users)
     json(res, 200, { stats: user.stats })
     return true
@@ -156,6 +170,22 @@ export async function handleLeaderboardRoute(req: IncomingMessage, res: ServerRe
     const user = getUserByToken(token)
     if (!user) { json(res, 401, { error: 'Unauthorized' }); return true }
     json(res, 200, { username: user.username, stats: user.stats })
+    return true
+  }
+
+  // GET /api/profile/:username
+  const profileMatch = url.match(/^\/api\/profile\/([^/?]+)$/)
+  if (req.method === 'GET' && profileMatch) {
+    const username = decodeURIComponent(profileMatch[1]!)
+    const users = loadUsers()
+    const user = users.find(u => u.username.toLowerCase() === username.toLowerCase())
+    if (!user) { json(res, 404, { error: 'User not found' }); return true }
+    json(res, 200, {
+      username: user.username,
+      stats: user.stats,
+      history: (user.history ?? []).slice(0, 20),
+      createdAt: user.createdAt,
+    })
     return true
   }
 

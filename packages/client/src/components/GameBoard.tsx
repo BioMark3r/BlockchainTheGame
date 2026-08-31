@@ -10,6 +10,7 @@ import type { PlayerState } from '@shared/types'
 import { displayName } from '../utils/display'
 import { soundYourTurn, soundBlockPublish, soundChainReorg, soundFork } from '../utils/sounds'
 import ChatPanel from './ChatPanel'
+import EmotePanel from './EmotePanel'
 
 interface Props {
   onReturnToLobby: () => void
@@ -219,8 +220,9 @@ export default function GameBoard({ onReturnToLobby }: Props) {
       {/* Game log */}
       <GameLog />
 
-      {/* In-game chat */}
+      {/* In-game chat + emotes */}
       <ChatPanel />
+      <EmotePanel />
 
       {/* Game over modal */}
       {phase === 'ended' && (

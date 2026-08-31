@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { connectWebSocket, connectSpectator, attemptRejoin } from '../ws/client'
 import { useGameStore } from '../store/gameStore'
 import HowToPlayModal from './HowToPlayModal'
+import ProfileModal from './ProfileModal'
 import type { CpuDifficulty } from '@shared/types'
 import { loadScoreboard, clearScoreboard } from '../utils/scoreboard'
 import {
@@ -29,6 +30,7 @@ export default function RoomLobby() {
   const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [leaderboardData, setLeaderboardData] = useState<Array<{ username: string; wins: number; losses: number; draws: number; gamesPlayed: number }>>([])
   const [leaderboardLoading, setLeaderboardLoading] = useState(false)
+  const [profileUsername, setProfileUsername] = useState<string | null>(null)
 
   useEffect(() => {
     setBoard(loadScoreboard())
@@ -114,6 +116,7 @@ export default function RoomLobby() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#060910]">
       {showHowToPlay && <HowToPlayModal onClose={() => setShowHowToPlay(false)} />}
+      {profileUsername && <ProfileModal username={profileUsername} onClose={() => setProfileUsername(null)} />}
 
       {/* Leaderboard modal */}
       {showLeaderboard && (
@@ -147,7 +150,14 @@ export default function RoomLobby() {
                     return (
                       <tr key={row.username} className={`border-b border-gray-800/50 last:border-0 ${authUser?.username === row.username ? 'text-blue-300' : 'text-gray-300'}`}>
                         <td className="py-1.5 text-gray-600 text-xs">{i + 1}</td>
-                        <td className="py-1.5 font-medium">{row.username}{authUser?.username === row.username ? ' (you)' : ''}</td>
+                        <td className="py-1.5 font-medium">
+                          <button
+                            onClick={() => setProfileUsername(row.username)}
+                            className="hover:text-blue-400 transition-colors text-left"
+                          >
+                            {row.username}{authUser?.username === row.username ? ' (you)' : ''}
+                          </button>
+                        </td>
                         <td className="py-1.5 text-center text-green-400 font-bold">{row.wins}</td>
                         <td className="py-1.5 text-center text-red-400 font-bold">{row.losses}</td>
                         <td className="py-1.5 text-center text-gray-400">{row.draws}</td>

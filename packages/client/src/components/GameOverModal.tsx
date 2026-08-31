@@ -8,6 +8,10 @@ import { apiRecordResult } from '../utils/auth'
 import { soundWin, soundLose } from '../utils/sounds'
 import ReplayModal from './ReplayModal'
 
+function getReplayLink(roomCode: string): string {
+  return `${window.location.origin}${window.location.pathname}?replay=${roomCode}`
+}
+
 interface Props {
   gameState: GameState
   localPlayerId: PlayerId | null
@@ -26,6 +30,15 @@ export default function GameOverModal({ gameState, localPlayerId, onPlayAgain, i
   const isRematching = useGameStore((s) => s.isRematching)
   const setIsRematching = useGameStore((s) => s.setIsRematching)
   const [showReplay, setShowReplay] = useState(false)
+  const [linkCopied, setLinkCopied] = useState(false)
+
+  function handleCopyLink() {
+    if (!roomCode) return
+    navigator.clipboard.writeText(getReplayLink(roomCode)).then(() => {
+      setLinkCopied(true)
+      setTimeout(() => setLinkCopied(false), 2000)
+    }).catch(() => {})
+  }
 
   useEffect(() => {
     if (isSpectator) return  // spectators don't record results
@@ -33,7 +46,12 @@ export default function GameOverModal({ gameState, localPlayerId, onPlayAgain, i
     const authUser = useGameStore.getState().authUser
     if (authUser) {
       const result = gameState.winner === null ? 'draw' : gameState.winner === localPlayerId ? 'win' : 'loss'
-      apiRecordResult(result).catch(() => {})
+      const opponentPlayer = gameState.players.find((p) => p.id !== localPlayerId)
+      const opponentName = opponentPlayer ? (opponentPlayer.isCpu ? 'CPU' : opponentPlayer.id) : undefined
+      const opts: { replayId?: string; opponentName?: string } = {}
+      if (roomCode) opts.replayId = roomCode
+      if (opponentName) opts.opponentName = opponentName
+      apiRecordResult(result, opts).catch(() => {})
     }
     if (gameState.winner === null) {
       // draw — no sound
@@ -166,12 +184,21 @@ export default function GameOverModal({ gameState, localPlayerId, onPlayAgain, i
               </button>
             )}
             {roomCode && (
-              <button
-                onClick={() => setShowReplay(true)}
-                className="w-full bg-purple-800 hover:bg-purple-700 text-white font-bold py-3 rounded-xl transition-colors"
-              >
-                🎬 Watch Replay
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowReplay(true)}
+                  className="flex-1 bg-purple-800 hover:bg-purple-700 text-white font-bold py-3 rounded-xl transition-colors"
+                >
+                  🎬 Watch Replay
+                </button>
+                <button
+                  onClick={handleCopyLink}
+                  title="Copy shareable replay link"
+                  className="bg-gray-700 hover:bg-gray-600 text-white font-bold px-4 py-3 rounded-xl transition-colors text-sm"
+                >
+                  {linkCopied ? '✓ Copied' : '🔗 Share'}
+                </button>
+              </div>
             )}
             <button
               onClick={onPlayAgain}

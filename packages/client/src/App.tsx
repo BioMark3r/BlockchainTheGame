@@ -1,13 +1,18 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useGameStore } from './store/gameStore'
 import RoomLobby from './components/RoomLobby'
 import GameBoard from './components/GameBoard'
+import ReplayModal from './components/ReplayModal'
 import { attemptRejoin, clearReconnectStorage } from './ws/client'
 
 export default function App() {
   const gameState      = useGameStore((s) => s.gameState)
   const ws             = useGameStore((s) => s.ws)
   const isReconnecting = useGameStore((s) => s.isReconnecting)
+  const [sharedReplayId, setSharedReplayId] = useState<string | null>(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('replay')
+  })
 
   useEffect(() => {
     if (sessionStorage.getItem('btg_playerToken')) {
@@ -46,5 +51,18 @@ export default function App() {
     return <GameBoard onReturnToLobby={handleReturnToLobby} />
   }
 
-  return <RoomLobby />
+  return (
+    <>
+      {sharedReplayId && (
+        <ReplayModal
+          roomCode={sharedReplayId}
+          onClose={() => {
+            setSharedReplayId(null)
+            window.history.replaceState({}, '', window.location.pathname)
+          }}
+        />
+      )}
+      <RoomLobby />
+    </>
+  )
 }
