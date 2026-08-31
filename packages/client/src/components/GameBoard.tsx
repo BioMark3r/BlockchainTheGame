@@ -21,6 +21,7 @@ export default function GameBoard({ onReturnToLobby }: Props) {
   const error = useGameStore((s) => s.error)
   const playerNames = useGameStore((s) => s.playerNames)
   const cpuDifficulty = useGameStore((s) => s.cpuDifficulty)
+  const isSpectator = useGameStore((s) => s.isSpectator)
   const [invalidTxCardId, setInvalidTxCardId] = useState<string | null>(null)
   const [confirmingConcede, setConfirmingConcede] = useState(false)
   const [showHowToPlay, setShowHowToPlay] = useState(false)
@@ -64,10 +65,12 @@ export default function GameBoard({ onReturnToLobby }: Props) {
 
   const { players, currentTurn, chain, phase, validatorRedundancyCount, chainSplit } = gameState
 
-  const localPlayer = players.find((p) => p.id === localPlayerId) as PlayerState
-  const opponentPlayer = players.find((p) => p.id !== localPlayerId) as PlayerState
+  // For spectators localPlayerId is null — treat player1 as the "local" perspective
+  const spectatorLocalId = localPlayerId ?? players[0]!.id
+  const localPlayer = (players.find((p) => p.id === spectatorLocalId) ?? players[0]!) as PlayerState
+  const opponentPlayer = (players.find((p) => p.id !== spectatorLocalId) ?? players[1]!) as PlayerState
 
-  const isMyTurn = currentTurn === localPlayerId
+  const isMyTurn = !isSpectator && currentTurn === localPlayerId
 
   const diffLabel = cpuDifficulty === 'easy' ? '🟢 Easy' : cpuDifficulty === 'hard' ? '🔴 Hard' : cpuDifficulty === 'normal' ? '🟡 Normal' : null
 
@@ -99,9 +102,14 @@ export default function GameBoard({ onReturnToLobby }: Props) {
           </button>
         </div>
         <div className="flex items-center gap-3">
+          {isSpectator && (
+            <span className="text-xs bg-purple-900/50 border border-purple-600/50 text-purple-300 rounded-full px-2.5 py-0.5 font-medium">
+              👁 Spectating
+            </span>
+          )}
           <div className="text-sm">{turnBanner}</div>
           {phase === 'playing' && <TurnTimer isMyTurn={isMyTurn} key={currentTurn} />}
-          {phase === 'playing' && (
+          {phase === 'playing' && !isSpectator && (
             confirmingConcede ? (
               <span className="flex items-center gap-2 text-xs">
                 <span className="text-gray-400">Sure?</span>
@@ -198,13 +206,13 @@ export default function GameBoard({ onReturnToLobby }: Props) {
         }}
       />
 
-      {/* Local player zone */}
+      {/* Local player zone — spectators see both zones as non-interactive */}
       <PlayerZone
         player={localPlayer}
-        isLocal={true}
+        isLocal={!isSpectator}
         isCurrentTurn={isMyTurn}
-        localPlayerId={localPlayerId}
-        onInvalidTxPending={(id) => setInvalidTxCardId(id)}
+        localPlayerId={isSpectator ? null : localPlayerId}
+        {...(!isSpectator ? { onInvalidTxPending: (id: string | null) => setInvalidTxCardId(id) } : {})}
       />
 
       {/* Game log */}
@@ -216,6 +224,8 @@ export default function GameBoard({ onReturnToLobby }: Props) {
           gameState={gameState}
           localPlayerId={localPlayerId}
           onPlayAgain={onReturnToLobby}
+          isSpectator={isSpectator}
+          roomCode={useGameStore.getState().roomCode}
         />
       )}
     </div>

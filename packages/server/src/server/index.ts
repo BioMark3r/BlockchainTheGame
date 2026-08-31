@@ -5,10 +5,41 @@ import { ReconnectManager } from './reconnect.js'
 import { createMessageHandler } from './handlers.js'
 import { checkRateLimit } from './rateLimit.js'
 import { handleLeaderboardRoute } from './leaderboard.js'
+import type { ServerResponse } from 'http'
 
 const PORT = parseInt(process.env['PORT'] ?? '3001', 10)
 
+function jsonResponse(res: ServerResponse, status: number, data: unknown): void {
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.writeHead(status, { 'Content-Type': 'application/json' })
+  res.end(JSON.stringify(data))
+}
+
 const httpServer = createServer(async (req, res) => {
+  const url = req.url ?? ''
+
+  // Replay endpoint — GET /api/replay/:roomCode
+  const replayMatch = url.match(/^\/api\/replay\/([A-Z0-9]{6})$/)
+  if (req.method === 'GET' && replayMatch) {
+    const roomCode = replayMatch[1]!
+    const room = rooms.getRoom(roomCode)
+    if (!room || !room.gameState || !room.initialPlayerIds) {
+      jsonResponse(res, 404, { error: 'Replay not found or game not started' })
+      return
+    }
+    jsonResponse(res, 200, {
+      roomCode,
+      initialPlayerIds: room.initialPlayerIds,
+      isCpuGame: room.cpuSlot,
+      displayNames: Object.fromEntries(
+        room.players.filter(Boolean).map((p) => [p!.playerId, p!.displayName])
+      ),
+      actionLog: room.actionLog,
+      finalState: room.gameState,
+    })
+    return
+  }
+
   const handled = await handleLeaderboardRoute(req, res)
   if (handled) return
   res.writeHead(200, { 'Content-Type': 'text/plain' })
@@ -47,6 +78,8 @@ wss.on('connection', (ws: WebSocket) => {
         }
       }
     }
+    // If not a player, remove from spectators
+    rooms.removeSpectator(ws)
   })
 
   ws.on('error', (err) => {

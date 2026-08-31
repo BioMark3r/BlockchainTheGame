@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import type { GameState, PlayerId } from '@shared/types'
 import { useGameStore } from '../store/gameStore'
 import { computeGameStats, type PlayerStats } from '../utils/gameStats'
@@ -6,14 +6,17 @@ import { displayName } from '../utils/display'
 import { recordResult } from '../utils/scoreboard'
 import { apiRecordResult } from '../utils/auth'
 import { soundWin, soundLose } from '../utils/sounds'
+import ReplayModal from './ReplayModal'
 
 interface Props {
   gameState: GameState
-  localPlayerId: PlayerId
+  localPlayerId: PlayerId | null
   onPlayAgain: () => void
+  isSpectator?: boolean
+  roomCode?: string | null
 }
 
-export default function GameOverModal({ gameState, localPlayerId, onPlayAgain }: Props) {
+export default function GameOverModal({ gameState, localPlayerId, onPlayAgain, isSpectator = false, roomCode }: Props) {
   const { winner, players } = gameState
   const isLocalWinner = winner === localPlayerId
   const log = useGameStore((s) => s.gameLog)
@@ -22,9 +25,11 @@ export default function GameOverModal({ gameState, localPlayerId, onPlayAgain }:
   const send = useGameStore((s) => s.send)
   const isRematching = useGameStore((s) => s.isRematching)
   const setIsRematching = useGameStore((s) => s.setIsRematching)
+  const [showReplay, setShowReplay] = useState(false)
 
   useEffect(() => {
-    recordResult(localPlayerId, gameState.winner)
+    if (isSpectator) return  // spectators don't record results
+    if (localPlayerId) recordResult(localPlayerId, gameState.winner)
     const authUser = useGameStore.getState().authUser
     if (authUser) {
       const result = gameState.winner === null ? 'draw' : gameState.winner === localPlayerId ? 'win' : 'loss'
@@ -54,6 +59,10 @@ export default function GameOverModal({ gameState, localPlayerId, onPlayAgain }:
     : 'Nobody'
 
   return (
+    <>
+    {showReplay && roomCode && (
+      <ReplayModal roomCode={roomCode} onClose={() => setShowReplay(false)} />
+    )}
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-gray-900 border border-gray-700 rounded-2xl p-8 w-full max-w-md shadow-2xl text-center">
         <div className="text-5xl mb-4">{isLocalWinner ? '🏆' : '💀'}</div>
@@ -148,12 +157,20 @@ export default function GameOverModal({ gameState, localPlayerId, onPlayAgain }:
           <div className="text-center text-gray-400 text-sm animate-pulse">Setting up rematch…</div>
         ) : (
           <div className="flex flex-col gap-3">
-            {gameState.phase === 'ended' && (
+            {gameState.phase === 'ended' && !isSpectator && (
               <button
                 onClick={handleRematch}
                 className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-colors"
               >
                 🔄 Rematch
+              </button>
+            )}
+            {roomCode && (
+              <button
+                onClick={() => setShowReplay(true)}
+                className="w-full bg-purple-800 hover:bg-purple-700 text-white font-bold py-3 rounded-xl transition-colors"
+              >
+                🎬 Watch Replay
               </button>
             )}
             <button
@@ -166,5 +183,6 @@ export default function GameOverModal({ gameState, localPlayerId, onPlayAgain }:
         )}
       </div>
     </div>
+    </>
   )
 }

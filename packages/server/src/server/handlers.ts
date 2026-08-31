@@ -11,14 +11,15 @@ import { triggerCpuTurn } from './ai.js'
 // Message shapes (incoming)
 // ---------------------------------------------------------------------------
 
-interface CreateRoomMsg { type: 'CREATE_ROOM'; vsComp: boolean; difficulty?: CpuDifficulty; displayName?: string }
-interface JoinRoomMsg   { type: 'JOIN_ROOM';   roomCode: string; displayName?: string }
-interface RejoinMsg     { type: 'REJOIN';       roomCode: string; playerToken: string }
-interface ActionMsg     { type: 'ACTION';       action: TurnAction }
-interface ConcedeMsg    { type: 'CONCEDE' }
-interface RematchMsg    { type: 'REMATCH' }
+interface CreateRoomMsg  { type: 'CREATE_ROOM'; vsComp: boolean; difficulty?: CpuDifficulty; displayName?: string }
+interface JoinRoomMsg    { type: 'JOIN_ROOM';   roomCode: string; displayName?: string }
+interface RejoinMsg      { type: 'REJOIN';       roomCode: string; playerToken: string }
+interface ActionMsg      { type: 'ACTION';       action: TurnAction }
+interface ConcedeMsg     { type: 'CONCEDE' }
+interface RematchMsg     { type: 'REMATCH' }
+interface SpectateMsg    { type: 'SPECTATE';     roomCode: string }
 
-type IncomingMsg = CreateRoomMsg | JoinRoomMsg | RejoinMsg | ActionMsg | ConcedeMsg | RematchMsg
+type IncomingMsg = CreateRoomMsg | JoinRoomMsg | RejoinMsg | ActionMsg | ConcedeMsg | RematchMsg | SpectateMsg
 
 // ---------------------------------------------------------------------------
 // Turn timer
@@ -84,13 +85,17 @@ function getDisplayNames(room: Room): Record<string, string> {
   return names
 }
 
-/** Broadcast the current game state to all human players in a room */
+/** Broadcast the current game state to all human players and spectators in a room */
 function broadcastState(room: Room, state: GameState): void {
   const payload = { type: 'GAME_STATE', state, displayNames: getDisplayNames(room) }
   for (const player of room.players) {
     if (player && !player.isCpu && player.ws) {
       send(player.ws, payload)
     }
+  }
+  // Spectators get the same state broadcast
+  for (const sw of room.spectators) {
+    send(sw, { ...payload, spectating: true })
   }
 }
 
@@ -101,12 +106,18 @@ function startGame(room: Room, rooms: RoomManager, reconnect: ReconnectManager):
 
   const state = createGame(p1.playerId, p2.playerId, p2.isCpu)
   room.gameState = state
+  room.initialPlayerIds = [p1.playerId, p2.playerId]
+  room.actionLog = []
 
   const startPayload = { type: 'GAME_STARTED', state, displayNames: getDisplayNames(room) }
   for (const player of room.players) {
     if (player && !player.isCpu && player.ws) {
       send(player.ws, startPayload)
     }
+  }
+  // Notify any spectators already connected before the game started
+  for (const sw of room.spectators) {
+    send(sw, { ...startPayload, spectating: true })
   }
 
   // If it's the CPU's first turn, kick off its loop; otherwise start human turn timer
@@ -274,6 +285,9 @@ export function handlePlayerAction(
     return
   }
 
+  // Log the action for replay
+  room.actionLog.push({ action, turn: room.gameState.chain.length })
+
   room.gameState = result.state
   broadcastState(room, result.state)
 
@@ -426,6 +440,26 @@ export function handleRematch(
   }
 }
 
+export function handleSpectate(
+  ws: WebSocket,
+  msg: SpectateMsg,
+  rooms: RoomManager,
+): void {
+  const result = rooms.addSpectator(msg.roomCode, ws)
+  if (!result.ok) {
+    sendError(ws, result.error)
+    return
+  }
+  const room = rooms.getRoom(msg.roomCode)!
+  // Send current game state immediately so spectator sees the live board
+  send(ws, {
+    type: 'GAME_STATE',
+    state: room.gameState,
+    displayNames: getDisplayNames(room),
+    spectating: true,
+  })
+}
+
 // ---------------------------------------------------------------------------
 // Top-level message dispatcher
 // Attached per-connection in index.ts
@@ -438,6 +472,7 @@ export function createMessageHandler(
 ) {
   /** playerToken of this connection once they have created/joined/rejoined */
   let myToken: string | null = null
+  let isSpectator = false
 
   return function onMessage(raw: string): void {
     let msg: IncomingMsg
@@ -507,6 +542,11 @@ export function createMessageHandler(
             break
           }
         }
+        break
+      }
+      case 'SPECTATE': {
+        isSpectator = true
+        handleSpectate(ws, msg, rooms)
         break
       }
       default: {

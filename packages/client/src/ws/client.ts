@@ -4,8 +4,8 @@ import type { PlayerId, GameState, CpuDifficulty } from '@shared/types'
 type ServerMessage =
   | { type: 'ROOM_CREATED';    roomCode: string; playerToken: string; playerId: PlayerId }
   | { type: 'ROOM_JOINED';     roomCode: string; playerToken: string; playerId: PlayerId }
-  | { type: 'GAME_STARTED';    state: GameState; displayNames?: Record<string, string> }
-  | { type: 'GAME_STATE';      state: GameState; displayNames?: Record<string, string> }
+  | { type: 'GAME_STARTED';    state: GameState; displayNames?: Record<string, string>; spectating?: boolean }
+  | { type: 'GAME_STATE';      state: GameState; displayNames?: Record<string, string>; spectating?: boolean }
   | { type: 'WAITING_FOR_PLAYER' }
   | { type: 'ERROR';           message: string }
   | { type: 'REMATCH_CREATED'; roomCode: string; playerToken: string }
@@ -129,6 +129,55 @@ export function connectWebSocket(action: 'create' | 'join', roomCode: string, vs
 
   ws.addEventListener('error', () => {
     useGameStore.getState().setError('WebSocket connection error. Check the server is running.')
+  })
+
+  return ws
+}
+
+// ---------------------------------------------------------------------------
+// Spectate
+// ---------------------------------------------------------------------------
+
+export function connectSpectator(roomCode: string): WebSocket {
+  const ws = new WebSocket(WS_URL)
+
+  ws.addEventListener('open', () => {
+    useGameStore.getState().setWs(ws)
+    useGameStore.getState().setError(null)
+    ws.send(JSON.stringify({ type: 'SPECTATE', roomCode: roomCode.toUpperCase() }))
+  })
+
+  ws.addEventListener('message', (event: MessageEvent<string>) => {
+    let msg: ServerMessage
+    try {
+      msg = JSON.parse(event.data) as ServerMessage
+    } catch {
+      return
+    }
+
+    const store = useGameStore.getState()
+
+    switch (msg.type) {
+      case 'GAME_STATE':
+      case 'GAME_STARTED':
+        store.setGameState(msg.state)
+        store.setIsSpectator(true)
+        if (msg.displayNames) store.setPlayerNames(msg.displayNames)
+        break
+      case 'ERROR':
+        store.setError(msg.message)
+        break
+      default:
+        break
+    }
+  })
+
+  ws.addEventListener('close', () => {
+    useGameStore.getState().setWs(null)
+  })
+
+  ws.addEventListener('error', () => {
+    useGameStore.getState().setError('Spectator connection error.')
   })
 
   return ws

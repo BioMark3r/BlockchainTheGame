@@ -9,7 +9,7 @@ interface Props {
   player: PlayerState
   isLocal: boolean
   isCurrentTurn: boolean
-  localPlayerId: PlayerId
+  localPlayerId: PlayerId | null
   onInvalidTxPending?: (cardId: string | null) => void
 }
 
@@ -72,7 +72,7 @@ export default function PlayerZone({ player, isLocal, isCurrentTurn, localPlayer
       {isLocal ? (
         <PlayerHand
           hand={player.hand}
-          localPlayerId={localPlayerId}
+          localPlayerId={localPlayerId ?? player.id}
           isMyTurn={isCurrentTurn}
           {...(onInvalidTxPending ? { onInvalidTxPending } : {})}
         />

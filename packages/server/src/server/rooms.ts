@@ -1,6 +1,11 @@
 import { randomUUID } from 'crypto'
 import type { WebSocket } from 'ws'
-import type { GameState, PlayerId, CpuDifficulty } from '../../../../src/shared/types.js'
+import type { GameState, PlayerId, CpuDifficulty, TurnAction } from '../../../../src/shared/types.js'
+
+export interface ActionLogEntry {
+  action: TurnAction
+  turn: number  // chain.length at time of action (useful for replay ordering)
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -19,6 +24,8 @@ export interface Room {
   /** Slot 0 = player1, slot 1 = player2 / cpu */
   players: [RoomPlayer, RoomPlayer | null]
   gameState: GameState | null
+  /** Initial player IDs at game start — needed for replay reconstruction */
+  initialPlayerIds: [PlayerId, PlayerId] | null
   cpuSlot: boolean
   /** Timer that fires every 5s to send WAITING_FOR_PLAYER, cancelled at 30s */
   waitingTimer: ReturnType<typeof setInterval> | null
@@ -28,6 +35,10 @@ export interface Room {
   turnTimer: ReturnType<typeof setTimeout> | null
   /** CPU difficulty level */
   cpuDifficulty: CpuDifficulty
+  /** WebSocket connections of spectators — receive state broadcasts but cannot act */
+  spectators: WebSocket[]
+  /** Ordered log of every successful action applied to this game */
+  actionLog: ActionLogEntry[]
 }
 
 // ---------------------------------------------------------------------------
@@ -65,11 +76,14 @@ export class RoomManager {
         null,
       ],
       gameState: null,
+      initialPlayerIds: null,
       cpuSlot: vsComp,
       waitingTimer: null,
       autoCpuTimer: null,
       turnTimer: null,
       cpuDifficulty: 'normal',
+      spectators: [],
+      actionLog: [],
     }
 
     this.rooms.set(code, room)
@@ -102,6 +116,24 @@ export class RoomManager {
 
   getRoom(roomCode: string): Room | undefined {
     return this.rooms.get(roomCode)
+  }
+
+  addSpectator(roomCode: string, ws: WebSocket): { ok: true } | { ok: false; error: string } {
+    const room = this.rooms.get(roomCode)
+    if (!room) return { ok: false, error: `Room ${roomCode} not found` }
+    if (!room.gameState) return { ok: false, error: 'Game has not started yet' }
+    room.spectators.push(ws)
+    return { ok: true }
+  }
+
+  removeSpectator(ws: WebSocket): void {
+    for (const room of this.rooms.values()) {
+      const idx = room.spectators.indexOf(ws)
+      if (idx !== -1) {
+        room.spectators.splice(idx, 1)
+        return
+      }
+    }
   }
 
   /** Iterate all rooms — used by handlers to locate a room by ws/token */

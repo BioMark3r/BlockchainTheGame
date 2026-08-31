@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { connectWebSocket, attemptRejoin } from '../ws/client'
+import { connectWebSocket, connectSpectator, attemptRejoin } from '../ws/client'
 import { useGameStore } from '../store/gameStore'
 import HowToPlayModal from './HowToPlayModal'
 import type { CpuDifficulty } from '@shared/types'
@@ -103,6 +103,12 @@ export default function RoomLobby() {
     if (!joinCode.trim()) return
     clearError()
     connectWebSocket('join', joinCode.trim().toUpperCase(), false, displayName.trim() || 'Player 2')
+  }
+
+  function handleWatch() {
+    if (!joinCode.trim()) return
+    clearError()
+    connectSpectator(joinCode.trim().toUpperCase())
   }
 
   return (
@@ -262,8 +268,8 @@ export default function RoomLobby() {
               <hr className="flex-1 border-gray-700" />
             </div>
 
-            {/* Join room */}
-            <div className="flex gap-2">
+            {/* Join / Watch room */}
+            <div className="flex gap-2 flex-wrap">
               <input
                 type="text"
                 placeholder="Enter 6-char room code"
@@ -278,6 +284,14 @@ export default function RoomLobby() {
                 className="bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-5 py-2 rounded-xl transition-colors"
               >
                 Join
+              </button>
+              <button
+                onClick={handleWatch}
+                disabled={joinCode.trim().length < 3}
+                title="Watch this game as a spectator"
+                className="bg-gray-700 hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed text-gray-300 font-bold px-4 py-2 rounded-xl transition-colors text-sm"
+              >
+                👁 Watch
               </button>
             </div>
 

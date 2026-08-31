@@ -26,6 +26,7 @@ interface GameStore {
   gameLog: LogEntry[]
   isReconnecting: boolean
   isRematching: boolean
+  isSpectator: boolean
   displayName: string
   playerNames: Record<string, string>
   authUser: AuthUser | null
@@ -39,6 +40,7 @@ interface GameStore {
   setError: (msg: string | null) => void
   setIsReconnecting: (v: boolean) => void
   setIsRematching: (v: boolean) => void
+  setIsSpectator: (v: boolean) => void
   send: (msg: unknown) => void
   clearError: () => void
   clearLog: () => void
@@ -58,6 +60,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   gameLog: [],
   isReconnecting: false,
   isRematching: false,
+  isSpectator: false,
   displayName: '',
   playerNames: {},
   authUser: null,
@@ -78,6 +81,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setError: (msg) => set({ error: msg }),
   setIsReconnecting: (v) => set({ isReconnecting: v }),
   setIsRematching: (v) => set({ isRematching: v }),
+  setIsSpectator: (v) => set({ isSpectator: v }),
   clearError: () => set({ error: null }),
   clearLog: () => set({ gameLog: [] }),
   setDisplayName: (name) => set({ displayName: name }),
