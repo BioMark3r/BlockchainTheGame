@@ -132,6 +132,7 @@ describe('INVALID_TRANSACTION effect', () => {
       id: 'block-1',
       publishedBy: 'player2' as const,
       transactions: [tx1, tx2, tx3] as [typeof tx1, typeof tx2, typeof tx3],
+      isPending: false,
     }
     const state = makeState({
       players: [makePlayer('player1', { hand: [card] }), makePlayer('player2')],
@@ -170,6 +171,7 @@ describe('CHAIN_REORG effect', () => {
       id: 'block-1',
       publishedBy: 'player1' as const,
       transactions: [tx1, tx2, tx3] as [typeof tx1, typeof tx2, typeof tx3],
+      isPending: false,
     }
     const state = makeState({
       players: [makePlayer('player1', { hand: [card] }), makePlayer('player2')],

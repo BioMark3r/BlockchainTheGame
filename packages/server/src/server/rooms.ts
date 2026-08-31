@@ -35,6 +35,8 @@ export interface Room {
   turnTimer: ReturnType<typeof setTimeout> | null
   /** CPU difficulty level */
   cpuDifficulty: CpuDifficulty
+  /** Game mode — l1 (classic) or l2 (Scaling Wars) */
+  gameMode: 'l1' | 'l2'
   /** WebSocket connections of spectators — receive state broadcasts but cannot act */
   spectators: WebSocket[]
   /** Ordered log of every successful action applied to this game */
@@ -82,6 +84,7 @@ export class RoomManager {
       autoCpuTimer: null,
       turnTimer: null,
       cpuDifficulty: 'normal',
+      gameMode: 'l1',
       spectators: [],
       actionLog: [],
     }

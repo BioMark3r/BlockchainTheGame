@@ -35,6 +35,12 @@ export function makeState(overrides: Partial<GameState> = {}): GameState {
     winner: null,
     forkReason: null,
     genesisCard: makeCard(CardType.GENESIS, 'genesis-1'),
+    gameMode: 'l1',
+    pendingBatches: [],
+    zkProofActive: null,
+    bridgeActive: null,
+    mevActive: null,
+    gasSpike: null,
     ...overrides,
   }
 }

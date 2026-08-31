@@ -10,10 +10,11 @@ export { getWinner } from './winner'
 export function createGame(
   player1Id: PlayerId,
   player2Id: PlayerId,
-  player2IsCpu: boolean = false
+  player2IsCpu: boolean = false,
+  gameMode: 'l1' | 'l2' = 'l1'
 ): GameState {
-  const { genesisCard, drawPile: rawDeck1 } = buildDeck(player1Id)
-  const { drawPile: rawDeck2 } = buildDeck(player2Id)
+  const { genesisCard, drawPile: rawDeck1 } = buildDeck(player1Id, gameMode)
+  const { drawPile: rawDeck2 } = buildDeck(player2Id, gameMode)
 
   const shuffled1 = shuffleDeck(rawDeck1)
   const shuffled2 = shuffleDeck(rawDeck2)
@@ -53,5 +54,11 @@ export function createGame(
     winner: null,
     forkReason: null,
     genesisCard,
+    gameMode,
+    pendingBatches: [],
+    zkProofActive: null,
+    bridgeActive: null,
+    mevActive: null,
+    gasSpike: null,
   }
 }

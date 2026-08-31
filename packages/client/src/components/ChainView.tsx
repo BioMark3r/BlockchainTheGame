@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import type { Block, Card, ChainSplitState } from '@shared/types'
+import type { Block, Card, ChainSplitState, PendingBatch, PlayerId } from '@shared/types'
 import BlockCard from './BlockCard'
 
 interface Props {
@@ -10,9 +10,15 @@ interface Props {
   localPlayerId?: string
   chainSplit?: ChainSplitState
   validatorRedundancyCount?: number
+  pendingBatches?: PendingBatch[]
+  zkProofActive?: PlayerId | null
+  bridgeActive?: PlayerId | null
+  mevActive?: PlayerId | null
+  gasSpike?: PlayerId | null
+  gameMode?: 'l1' | 'l2'
 }
 
-export default function ChainView({ chain, genesisCard, selectingForInvalidTx = false, onBlockSelected, localPlayerId, chainSplit, validatorRedundancyCount }: Props) {
+export default function ChainView({ chain, genesisCard, selectingForInvalidTx = false, onBlockSelected, localPlayerId, chainSplit, validatorRedundancyCount, pendingBatches = [], zkProofActive, bridgeActive, mevActive, gasSpike, gameMode }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const prevLengthRef = useRef(chain.length)
   const seenIdsRef = useRef<Set<string>>(new Set(chain.map((b) => b.id)))
@@ -65,7 +71,7 @@ export default function ChainView({ chain, genesisCard, selectingForInvalidTx = 
         ⛓ The Chain — {chain.length} block{chain.length !== 1 ? 's' : ''}
       </h2>
 
-      {(chainSplit?.active || (validatorRedundancyCount ?? 0) > 0) && (
+      {(chainSplit?.active || (validatorRedundancyCount ?? 0) > 0 || zkProofActive || bridgeActive || mevActive || gasSpike) && (
         <div className="flex gap-2 mb-2 flex-wrap">
           {chainSplit?.active && (
             <span className="text-xs bg-orange-950/60 border border-orange-500/50 text-orange-300 rounded-full px-2 py-0.5">
@@ -75,6 +81,26 @@ export default function ChainView({ chain, genesisCard, selectingForInvalidTx = 
           {(validatorRedundancyCount ?? 0) > 0 && (
             <span className="text-xs bg-blue-950/60 border border-blue-500/50 text-blue-300 rounded-full px-2 py-0.5">
               ⚡ Validator Redundancy Active — next block earns 2×
+            </span>
+          )}
+          {zkProofActive && (
+            <span className="text-xs bg-fuchsia-950/60 border border-fuchsia-500/50 text-fuchsia-300 rounded-full px-2 py-0.5">
+              🔐 ZK Proof ready ({zkProofActive})
+            </span>
+          )}
+          {bridgeActive && (
+            <span className="text-xs bg-lime-950/60 border border-lime-500/50 text-lime-300 rounded-full px-2 py-0.5">
+              🌉 Bridge active ({bridgeActive}) — next batch earns 2×
+            </span>
+          )}
+          {mevActive && (
+            <span className="text-xs bg-red-950/60 border border-red-500/50 text-red-300 rounded-full px-2 py-0.5">
+              🤖 MEV Bot active ({mevActive})
+            </span>
+          )}
+          {gasSpike && (
+            <span className="text-xs bg-orange-950/60 border border-orange-500/50 text-orange-300 rounded-full px-2 py-0.5">
+              ⛽ Gas Spike on {gasSpike} — next draw skipped
             </span>
           )}
         </div>
@@ -98,20 +124,30 @@ export default function ChainView({ chain, genesisCard, selectingForInvalidTx = 
           <div className="text-yellow-600 text-[10px] mt-0.5 font-mono">{genesisCard.id.slice(-4)}</div>
         </div>
 
-        {chain.map((block, i) => (
-          <React.Fragment key={block.id}>
-            {/* Chain link connector */}
-            <div className="flex-shrink-0 text-gray-600 text-xs">→</div>
-            <BlockCard
-              block={block}
-              index={i}
-              isFlashing={flashingIds.has(block.id)}
-              isNew={newIds.has(block.id)}
-              isTargetable={selectingForInvalidTx && (localPlayerId ? block.publishedBy !== localPlayerId : true)}
-              {...(onBlockSelected ? { onSelect: onBlockSelected } : {})}
-            />
-          </React.Fragment>
-        ))}
+        {chain.map((block, i) => {
+          const isPendingBatch = pendingBatches.some((pb) => pb.blockId === block.id)
+          return (
+            <React.Fragment key={block.id}>
+              {/* Chain link connector */}
+              <div className="flex-shrink-0 text-gray-600 text-xs">→</div>
+              <div className="relative flex-shrink-0">
+                <BlockCard
+                  block={block}
+                  index={i}
+                  isFlashing={flashingIds.has(block.id)}
+                  isNew={newIds.has(block.id)}
+                  isTargetable={selectingForInvalidTx && (localPlayerId ? block.publishedBy !== localPlayerId : true)}
+                  {...(onBlockSelected ? { onSelect: onBlockSelected } : {})}
+                />
+                {isPendingBatch && (
+                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-orange-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                    ⏳ Pending
+                  </div>
+                )}
+              </div>
+            </React.Fragment>
+          )
+        })}
 
         {chain.length === 0 && (
           <div className="text-gray-600 text-sm pl-3 self-center">

@@ -1,6 +1,54 @@
 import type { Card, GameState, PlayerId } from '@shared/types'
 import { CardType } from '@shared/types'
 
+function getHintL2(hand: Card[], state: GameState, playerId: PlayerId): Hint | null {
+  const txCards = hand.filter(c => c.type === CardType.TRANSACTION)
+  const me = state.players.find(p => p.id === playerId)!
+  const opp = state.players.find(p => p.id !== playerId)!
+  const mySequencers = me.validators.length
+  const creditDiff = me.credits - opp.credits
+
+  const dataBlobCard = hand.find(c => c.type === CardType.DATA_BLOB)
+  const orCard = hand.find(c => c.type === CardType.OPTIMISTIC_ROLLUP)
+  const fraudProofCard = hand.find(c => c.type === CardType.FRAUD_PROOF)
+  const zkCard = hand.find(c => c.type === CardType.ZK_PROOF)
+  const sequencerCard = hand.find(c => c.type === CardType.SEQUENCER)
+  const mevCard = hand.find(c => c.type === CardType.MEV_BOT)
+  const bridgeCard = hand.find(c => c.type === CardType.BRIDGE)
+  const hardForkCard = hand.find(c => c.type === CardType.HARD_FORK)
+
+  const oppPendingBatches = state.pendingBatches.filter(pb => pb.publishedBy !== playerId && !pb.isZkProven)
+
+  if (txCards.length >= 3) {
+    return { icon: '⚡', text: `You have ${txCards.length} Transaction cards — publish a batch now to earn credits!`, priority: 'high' }
+  }
+  if (dataBlobCard && txCards.length >= 1) {
+    return { icon: '💾', text: `Play Data Blob with 1 Transaction card to publish a fast batch and earn full credits.`, priority: 'high' }
+  }
+  if (orCard && txCards.length >= 2 && zkCard) {
+    return { icon: '🔐', text: `Play ZK Proof first, then Optimistic Rollup for instant credits that can't be fraud-proofed!`, priority: 'high' }
+  }
+  if (orCard && txCards.length >= 2) {
+    return { icon: '🔮', text: `Play Optimistic Rollup to publish a batch. Credits go into escrow — play ZK Proof next time to skip escrow.`, priority: 'medium' }
+  }
+  if (fraudProofCard && oppPendingBatches.length > 0) {
+    return { icon: '🕵️', text: `Opponent has a pending batch in escrow — play Fraud Proof to cancel it and deny their credits!`, priority: 'high' }
+  }
+  if (mevCard) {
+    return { icon: '🤖', text: `Play MEV Bot to steal 2 credits when your opponent next publishes a batch.`, priority: 'medium' }
+  }
+  if (bridgeCard && mySequencers >= 2) {
+    return { icon: '🌉', text: `Play Bridge before your next batch to double your credits as the publisher.`, priority: 'medium' }
+  }
+  if (sequencerCard && mySequencers < 3) {
+    return { icon: '🔵', text: `Play a Sequencer to increase your credit income. You earn ${mySequencers} cr/batch — add one for ${mySequencers + 1}.`, priority: mySequencers === 0 ? 'high' : 'medium' }
+  }
+  if (hardForkCard && creditDiff >= 5) {
+    return { icon: '⚡', text: `You're ahead by ${creditDiff} credits — play Hard Fork to end the game and secure your win!`, priority: 'high' }
+  }
+  return null
+}
+
 export interface Hint {
   icon: string
   text: string
@@ -8,6 +56,10 @@ export interface Hint {
 }
 
 export function getHint(hand: Card[], state: GameState, playerId: PlayerId): Hint {
+  if (state.gameMode === 'l2') {
+    const l2Hint = getHintL2(hand, state, playerId)
+    if (l2Hint) return l2Hint
+  }
   const txCards = hand.filter(c => c.type === CardType.TRANSACTION)
   const validators = hand.filter(c => c.type === CardType.VALIDATOR)
   const blockReward = hand.find(c => c.type === CardType.BLOCK_REWARD)

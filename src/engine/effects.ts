@@ -1,4 +1,4 @@
-import { Block, CardType, Card, GameState, PlayCardAction, PlayerId } from '../shared/types'
+import { Block, CardType, Card, GameState, PlayCardAction, PlayerId, PendingBatch } from '../shared/types'
 import { getWinner } from './winner'
 import { dealHand, shuffleDeck } from './deck'
 import { calculateBlockCredits } from './credits'
@@ -11,6 +11,12 @@ function getPlayerIndex(state: GameState, playerId: PlayerId): 0 | 1 {
   const idx = state.players.findIndex((p) => p.id === playerId)
   if (idx !== 0 && idx !== 1) throw new Error(`Player ${playerId} not found in game state`)
   return idx as 0 | 1
+}
+
+function getOpponentId(state: GameState, playerId: PlayerId): PlayerId {
+  const opp = state.players.find((p) => p.id !== playerId)
+  if (!opp) throw new Error(`Opponent not found for ${playerId}`)
+  return opp.id
 }
 
 /** Return a new state with the acting card removed from the player's hand and moved to discard. */
@@ -59,6 +65,9 @@ function applyValidator(state: GameState, action: PlayCardAction): GameState {
 
   return { ...stateAfterConsume, players: newPlayers }
 }
+
+// SEQUENCER is identical to VALIDATOR
+const applySequencer = applyValidator
 
 function applyReshuffle(state: GameState, action: PlayCardAction): GameState {
   // Card is always consumed (moved to discard) even when it's a no-op
@@ -157,6 +166,9 @@ function applyFork(state: GameState, action: PlayCardAction): GameState {
   return { ...endedState, winner: getWinner(endedState) }
 }
 
+// HARD_FORK is identical to FORK
+const applyHardFork = applyFork
+
 function applyBlockReward(state: GameState, action: PlayCardAction): GameState {
   const idx = getPlayerIndex(state, action.playerId)
   const player = state.players[idx]!
@@ -188,6 +200,7 @@ function applyBlockReward(state: GameState, action: PlayCardAction): GameState {
     id: blockId,
     publishedBy: action.playerId,
     transactions: [txCards[0]!, txCards[1]!, blockCard],
+    isPending: false,
   }
 
   let newState: GameState = { ...state, players: newPlayers, chain: [...state.chain, block] }
@@ -210,6 +223,252 @@ function applyBlockReward(state: GameState, action: PlayCardAction): GameState {
 }
 
 // ---------------------------------------------------------------------------
+// L2 effect functions
+// ---------------------------------------------------------------------------
+
+function applyDataBlob(state: GameState, action: PlayCardAction): GameState {
+  const idx = getPlayerIndex(state, action.playerId)
+  const player = state.players[idx]!
+
+  const txCards = player.hand.filter((c) => c.type === CardType.TRANSACTION)
+  if (txCards.length < 1) {
+    throw new Error('DATA_BLOB requires at least 1 Transaction card in hand')
+  }
+
+  const blobCard = player.hand.find((c) => c.id === action.cardId)!
+  const txCard = txCards[0]!
+  const blockId = `block-${action.playerId}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+
+  const usedIds = new Set([action.cardId, txCard.id])
+  const newHand = player.hand.filter((c) => !usedIds.has(c.id))
+  const newDiscard = [...player.discardPile, blobCard, txCard]
+
+  const newPlayer = { ...player, hand: newHand, discardPile: newDiscard }
+  const newPlayers: [typeof state.players[0], typeof state.players[1]] = [...state.players] as [
+    typeof state.players[0],
+    typeof state.players[1],
+  ]
+  newPlayers[idx] = newPlayer
+
+  const block: Block = {
+    id: blockId,
+    publishedBy: action.playerId,
+    transactions: [blobCard, txCard],
+    isPending: false,
+  }
+
+  let newState: GameState = { ...state, players: newPlayers, chain: [...state.chain, block] }
+
+  // Calculate credits
+  const creditsMap = calculateBlockCredits(newState, action.playerId)
+  const creditedPlayers: [typeof newPlayers[0], typeof newPlayers[1]] = [...newPlayers] as [
+    typeof newPlayers[0],
+    typeof newPlayers[1],
+  ]
+
+  for (let i = 0; i < creditedPlayers.length; i++) {
+    const p = creditedPlayers[i]!
+    let earned = creditsMap.get(p.id) ?? 0
+    // Bridge doubles publisher's credits
+    if (newState.bridgeActive === action.playerId && p.id === action.playerId) {
+      earned *= 2
+    }
+    creditedPlayers[i] = { ...p, credits: p.credits + earned }
+  }
+
+  // MEV steal: if mevActive is opponent, steal 2 from publisher
+  let mevActive = newState.mevActive
+  if (mevActive !== null && mevActive !== action.playerId) {
+    const pubIdx = getPlayerIndex(newState, action.playerId)
+    const mevIdx = getPlayerIndex(newState, mevActive)
+    const stolen = Math.min(2, creditedPlayers[pubIdx]!.credits)
+    creditedPlayers[pubIdx] = { ...creditedPlayers[pubIdx]!, credits: creditedPlayers[pubIdx]!.credits - stolen }
+    creditedPlayers[mevIdx] = { ...creditedPlayers[mevIdx]!, credits: creditedPlayers[mevIdx]!.credits + stolen }
+    mevActive = null
+  }
+
+  newState = {
+    ...newState,
+    players: creditedPlayers,
+    validatorRedundancyCount: 0,
+    bridgeActive: null,
+    zkProofActive: newState.zkProofActive === action.playerId ? null : newState.zkProofActive,
+    mevActive,
+  }
+  return newState
+}
+
+function applyOptimisticRollup(state: GameState, action: PlayCardAction): GameState {
+  const idx = getPlayerIndex(state, action.playerId)
+  const player = state.players[idx]!
+
+  const txCards = player.hand.filter((c) => c.type === CardType.TRANSACTION)
+  if (txCards.length < 2) {
+    throw new Error('OPTIMISTIC_ROLLUP requires at least 2 Transaction cards in hand')
+  }
+
+  const orCard = player.hand.find((c) => c.id === action.cardId)!
+  const tx1 = txCards[0]!
+  const tx2 = txCards[1]!
+  const blockId = `block-${action.playerId}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+
+  const isZkProven = state.zkProofActive === action.playerId
+
+  const usedIds = new Set([action.cardId, tx1.id, tx2.id])
+  const newHand = player.hand.filter((c) => !usedIds.has(c.id))
+  const newDiscard = [...player.discardPile, orCard, tx1, tx2]
+
+  const newPlayer = { ...player, hand: newHand, discardPile: newDiscard }
+  const newPlayers: [typeof state.players[0], typeof state.players[1]] = [...state.players] as [
+    typeof state.players[0],
+    typeof state.players[1],
+  ]
+  newPlayers[idx] = newPlayer
+
+  const block: Block = {
+    id: blockId,
+    publishedBy: action.playerId,
+    transactions: [orCard, tx1, tx2],
+    isPending: !isZkProven,
+  }
+
+  let newState: GameState = {
+    ...state,
+    players: newPlayers,
+    chain: [...state.chain, block],
+    zkProofActive: isZkProven ? null : state.zkProofActive,
+  }
+
+  // Calculate credits
+  const creditsMap = calculateBlockCredits(newState, action.playerId)
+
+  // Bridge multiplier for publisher
+  const bridgeMultiplier = newState.bridgeActive === action.playerId ? 2 : 1
+
+  // MEV steal
+  let mevActive = newState.mevActive
+  const mevOpponent = mevActive !== null && mevActive !== action.playerId ? mevActive : null
+
+  if (isZkProven) {
+    // Instant credits
+    const creditedPlayers: [typeof newPlayers[0], typeof newPlayers[1]] = [...newPlayers] as [
+      typeof newPlayers[0],
+      typeof newPlayers[1],
+    ]
+    for (let i = 0; i < creditedPlayers.length; i++) {
+      const p = creditedPlayers[i]!
+      let earned = creditsMap.get(p.id) ?? 0
+      if (p.id === action.playerId) earned *= bridgeMultiplier
+      creditedPlayers[i] = { ...p, credits: p.credits + earned }
+    }
+    // MEV
+    if (mevOpponent !== null) {
+      const pubIdx = getPlayerIndex(newState, action.playerId)
+      const mevIdx = getPlayerIndex(newState, mevOpponent)
+      const stolen = Math.min(2, creditedPlayers[pubIdx]!.credits)
+      creditedPlayers[pubIdx] = { ...creditedPlayers[pubIdx]!, credits: creditedPlayers[pubIdx]!.credits - stolen }
+      creditedPlayers[mevIdx] = { ...creditedPlayers[mevIdx]!, credits: creditedPlayers[mevIdx]!.credits + stolen }
+      mevActive = null
+    }
+    newState = {
+      ...newState,
+      players: creditedPlayers,
+      validatorRedundancyCount: 0,
+      bridgeActive: null,
+      mevActive,
+    }
+  } else {
+    // Escrow credits in pendingBatches
+    const escrow: Partial<Record<PlayerId, number>> = {}
+    for (const [pid, earned] of creditsMap.entries()) {
+      let amt = earned
+      if (pid === action.playerId) amt *= bridgeMultiplier
+      if (amt > 0) escrow[pid] = amt
+    }
+
+    const pending: PendingBatch = {
+      blockId,
+      publishedBy: action.playerId,
+      creditsEscrowed: escrow,
+      isZkProven: false,
+    }
+
+    // MEV triggers regardless of escrow (steals from eventual publisher)
+    const creditedPlayers: [typeof newPlayers[0], typeof newPlayers[1]] = [...newPlayers] as [
+      typeof newPlayers[0],
+      typeof newPlayers[1],
+    ]
+    if (mevOpponent !== null) {
+      const pubIdx = getPlayerIndex(newState, action.playerId)
+      const mevIdx = getPlayerIndex(newState, mevOpponent)
+      const stolen = Math.min(2, creditedPlayers[pubIdx]!.credits)
+      creditedPlayers[pubIdx] = { ...creditedPlayers[pubIdx]!, credits: creditedPlayers[pubIdx]!.credits - stolen }
+      creditedPlayers[mevIdx] = { ...creditedPlayers[mevIdx]!, credits: creditedPlayers[mevIdx]!.credits + stolen }
+      mevActive = null
+    }
+
+    newState = {
+      ...newState,
+      players: creditedPlayers,
+      pendingBatches: [...newState.pendingBatches, pending],
+      validatorRedundancyCount: 0,
+      bridgeActive: null,
+      mevActive,
+    }
+  }
+
+  return newState
+}
+
+function applyFraudProof(state: GameState, action: PlayCardAction): GameState {
+  const stateAfterConsume = consumeCard(state, action.playerId, action.cardId)
+
+  // Find most recent (last) pending batch from opponent that is not ZK-proven
+  const oppPending = stateAfterConsume.pendingBatches
+    .filter((pb) => pb.publishedBy !== action.playerId && !pb.isZkProven)
+
+  if (oppPending.length === 0) {
+    // No-op
+    return stateAfterConsume
+  }
+
+  const target = oppPending[oppPending.length - 1]!
+
+  // Remove from pendingBatches; mark block as non-pending (cancelled) in chain
+  const newPendingBatches = stateAfterConsume.pendingBatches.filter((pb) => pb.blockId !== target.blockId)
+  const newChain = stateAfterConsume.chain.map((b) =>
+    b.id === target.blockId ? { ...b, isPending: false } : b
+  )
+
+  return {
+    ...stateAfterConsume,
+    pendingBatches: newPendingBatches,
+    chain: newChain,
+  }
+}
+
+function applyZkProof(state: GameState, action: PlayCardAction): GameState {
+  const stateAfterConsume = consumeCard(state, action.playerId, action.cardId)
+  return { ...stateAfterConsume, zkProofActive: action.playerId }
+}
+
+function applyMevBot(state: GameState, action: PlayCardAction): GameState {
+  const stateAfterConsume = consumeCard(state, action.playerId, action.cardId)
+  return { ...stateAfterConsume, mevActive: action.playerId }
+}
+
+function applyBridge(state: GameState, action: PlayCardAction): GameState {
+  const stateAfterConsume = consumeCard(state, action.playerId, action.cardId)
+  return { ...stateAfterConsume, bridgeActive: action.playerId }
+}
+
+function applyGasSpike(state: GameState, action: PlayCardAction): GameState {
+  const stateAfterConsume = consumeCard(state, action.playerId, action.cardId)
+  const oppId = getOpponentId(state, action.playerId)
+  return { ...stateAfterConsume, gasSpike: oppId }
+}
+
+// ---------------------------------------------------------------------------
 // Dispatch map + public applyEffect
 // ---------------------------------------------------------------------------
 
@@ -224,6 +483,16 @@ const CARD_EFFECTS: Partial<Record<CardType, EffectFn>> = {
   [CardType.CHAIN_REORG]: applyChainReorg,
   [CardType.FORK]: applyFork,
   [CardType.BLOCK_REWARD]: applyBlockReward,
+  // L2
+  [CardType.SEQUENCER]: applySequencer,
+  [CardType.DATA_BLOB]: applyDataBlob,
+  [CardType.OPTIMISTIC_ROLLUP]: applyOptimisticRollup,
+  [CardType.FRAUD_PROOF]: applyFraudProof,
+  [CardType.ZK_PROOF]: applyZkProof,
+  [CardType.MEV_BOT]: applyMevBot,
+  [CardType.BRIDGE]: applyBridge,
+  [CardType.GAS_SPIKE]: applyGasSpike,
+  [CardType.HARD_FORK]: applyHardFork,
 }
 
 export function applyEffect(state: GameState, action: PlayCardAction): GameState {

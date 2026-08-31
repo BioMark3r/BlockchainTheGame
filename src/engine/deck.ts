@@ -1,6 +1,6 @@
 import { Card, CardType, PlayerId } from '../shared/types'
 
-// Card counts per deck (50 total including genesis)
+// Card counts per deck (50 total including genesis) — L1
 const DECK_COMPOSITION: Array<{ type: CardType; count: number }> = [
   { type: CardType.GENESIS, count: 1 },
   { type: CardType.VALIDATOR, count: 10 },
@@ -14,11 +14,28 @@ const DECK_COMPOSITION: Array<{ type: CardType; count: number }> = [
   { type: CardType.FORK, count: 1 },
 ]
 
+// L2 deck composition (51 cards including genesis)
+const L2_DECK_COMPOSITION: Array<{ type: CardType; count: number }> = [
+  { type: CardType.GENESIS, count: 1 },
+  { type: CardType.SEQUENCER, count: 10 },
+  { type: CardType.TRANSACTION, count: 19 },
+  { type: CardType.DATA_BLOB, count: 5 },
+  { type: CardType.OPTIMISTIC_ROLLUP, count: 3 },
+  { type: CardType.FRAUD_PROOF, count: 2 },
+  { type: CardType.ZK_PROOF, count: 2 },
+  { type: CardType.MEV_BOT, count: 2 },
+  { type: CardType.BRIDGE, count: 1 },
+  { type: CardType.GAS_SPIKE, count: 2 },
+  { type: CardType.HARD_FORK, count: 1 },
+  { type: CardType.RESHUFFLE, count: 3 },
+]
+
 /** Build a full 50-card deck for a player. Returns the genesis card separately. */
-export function buildDeck(playerId: PlayerId): { genesisCard: Card; drawPile: Card[] } {
+export function buildDeck(playerId: PlayerId, gameMode: 'l1' | 'l2' = 'l1'): { genesisCard: Card; drawPile: Card[] } {
+  const composition = gameMode === 'l2' ? L2_DECK_COMPOSITION : DECK_COMPOSITION
   const allCards: Card[] = []
 
-  for (const { type, count } of DECK_COMPOSITION) {
+  for (const { type, count } of composition) {
     const typeName = type.toLowerCase().replace(/_/g, '-')
     for (let i = 1; i <= count; i++) {
       allCards.push({ id: `${playerId}-${typeName}-${i}`, type })

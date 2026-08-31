@@ -66,6 +66,7 @@ describe('Chain Reorg after Chain Split', () => {
         makeCard(CardType.TRANSACTION, `${id}-t2`),
         makeCard(CardType.TRANSACTION, `${id}-t3`),
       ] as [ReturnType<typeof makeCard>, ReturnType<typeof makeCard>, ReturnType<typeof makeCard>],
+      isPending: false,
     })
 
     const crCard = makeCard(CardType.CHAIN_REORG, 'cr-1')
@@ -110,6 +111,7 @@ describe('Chain Reorg after Chain Split', () => {
         makeCard(CardType.TRANSACTION, `${id}-t2`),
         makeCard(CardType.TRANSACTION, `${id}-t3`),
       ] as [ReturnType<typeof makeCard>, ReturnType<typeof makeCard>, ReturnType<typeof makeCard>],
+      isPending: false,
     })
 
     const tx1 = makeCard(CardType.TRANSACTION, 'tx-1')

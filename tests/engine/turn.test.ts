@@ -382,6 +382,7 @@ describe('CHAIN_REORG after CHAIN_SPLIT', () => {
       id: 'b-1',
       publishedBy: 'player2' as const,
       transactions: [tx1, tx2, tx3] as [typeof tx1, typeof tx2, typeof tx3],
+      isPending: false,
     }
     const state = makeState({
       players: [makePlayer('player1', { hand: [reorg] }), makePlayer('player2')],
@@ -410,6 +411,7 @@ describe('INVALID_TRANSACTION — no credit reversal', () => {
       id: 'b-1',
       publishedBy: 'player2' as const,
       transactions: [tx1, tx2, tx3] as [typeof tx1, typeof tx2, typeof tx3],
+      isPending: false,
     }
     // Give player2 some credits simulating they were already earned
     const state = makeState({

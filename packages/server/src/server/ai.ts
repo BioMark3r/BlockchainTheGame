@@ -8,6 +8,7 @@ import type { Room } from './rooms.js'
 // ---------------------------------------------------------------------------
 
 export function chooseAction(state: GameState, cpuPlayerId: PlayerId, difficulty: CpuDifficulty = 'normal'): TurnAction {
+  if (state.gameMode === 'l2') return chooseActionL2(state, cpuPlayerId)
   if (difficulty === 'easy') return chooseActionEasy(state, cpuPlayerId)
   if (difficulty === 'hard') return chooseActionHard(state, cpuPlayerId)
   return chooseActionNormal(state, cpuPlayerId)
@@ -294,6 +295,112 @@ function chooseActionHard(state: GameState, cpuPlayerId: PlayerId): TurnAction {
   }
 
   // Only 1–2 TX cards — discard one to keep drawing
+  const discardOne = hand[0]!
+  return {
+    type: 'DISCARD_REDRAW',
+    playerId: cpuPlayerId,
+    cardIdsToDiscard: [discardOne.id],
+  }
+}
+
+// ---------------------------------------------------------------------------
+// L2: Layer 2 AI
+// ---------------------------------------------------------------------------
+
+function chooseActionL2(state: GameState, cpuPlayerId: PlayerId): TurnAction {
+  const playerIdx = state.players.findIndex((p) => p.id === cpuPlayerId)
+  if (playerIdx === -1) throw new Error(`CPU player ${cpuPlayerId} not found in state`)
+  const myState = state.players[playerIdx]!
+  const oppState = state.players[playerIdx === 0 ? 1 : 0]!
+  const hand = myState.hand
+
+  const creditDiff = myState.credits - oppState.credits
+  const txCards = hand.filter((c) => c.type === CT.TRANSACTION)
+  const mySequencers = myState.validators.length
+
+  const hardForkCard = hand.find((c) => c.type === CT.HARD_FORK)
+  const dataBlobCard = hand.find((c) => c.type === CT.DATA_BLOB)
+  const orCard = hand.find((c) => c.type === CT.OPTIMISTIC_ROLLUP)
+  const fraudProofCard = hand.find((c) => c.type === CT.FRAUD_PROOF)
+  const zkCard = hand.find((c) => c.type === CT.ZK_PROOF)
+  const bridgeCard = hand.find((c) => c.type === CT.BRIDGE)
+  const mevCard = hand.find((c) => c.type === CT.MEV_BOT)
+  const sequencerCard = hand.find((c) => c.type === CT.SEQUENCER)
+  const gasSpikeCard = hand.find((c) => c.type === CT.GAS_SPIKE)
+  const reshuffleCard = hand.find((c) => c.type === CT.RESHUFFLE)
+
+  const oppPendingBatches = state.pendingBatches.filter((pb) => pb.publishedBy !== cpuPlayerId && !pb.isZkProven)
+
+  // 1. PUBLISH_BLOCK with 3 TX
+  if (txCards.length >= 3) {
+    return {
+      type: 'PUBLISH_BLOCK',
+      playerId: cpuPlayerId,
+      cardIds: [txCards[0]!.id, txCards[1]!.id, txCards[2]!.id],
+    }
+  }
+
+  // 2. DATA_BLOB with 1 TX
+  if (dataBlobCard && txCards.length >= 1) {
+    return { type: 'PLAY_CARD', playerId: cpuPlayerId, cardId: dataBlobCard.id }
+  }
+
+  // 3. OPTIMISTIC_ROLLUP with 2 TX
+  if (orCard && txCards.length >= 2) {
+    return { type: 'PLAY_CARD', playerId: cpuPlayerId, cardId: orCard.id }
+  }
+
+  // 4. FRAUD_PROOF if opponent has pending batches
+  if (fraudProofCard && oppPendingBatches.length > 0) {
+    return { type: 'PLAY_CARD', playerId: cpuPlayerId, cardId: fraudProofCard.id }
+  }
+
+  // 5. ZK_PROOF if have OR in hand
+  if (zkCard && orCard) {
+    return { type: 'PLAY_CARD', playerId: cpuPlayerId, cardId: zkCard.id }
+  }
+
+  // 6. BRIDGE if have sequencers
+  if (bridgeCard && mySequencers >= 2) {
+    return { type: 'PLAY_CARD', playerId: cpuPlayerId, cardId: bridgeCard.id }
+  }
+
+  // 7. MEV_BOT — always useful
+  if (mevCard) {
+    return { type: 'PLAY_CARD', playerId: cpuPlayerId, cardId: mevCard.id }
+  }
+
+  // 8. SEQUENCER if fewer than 3
+  if (sequencerCard && mySequencers < 3) {
+    return { type: 'PLAY_CARD', playerId: cpuPlayerId, cardId: sequencerCard.id }
+  }
+
+  // 9. HARD_FORK if winning by 5+
+  if (hardForkCard && creditDiff >= 5) {
+    return { type: 'PLAY_CARD', playerId: cpuPlayerId, cardId: hardForkCard.id }
+  }
+
+  // 10. GAS_SPIKE
+  if (gasSpikeCard) {
+    return { type: 'PLAY_CARD', playerId: cpuPlayerId, cardId: gasSpikeCard.id }
+  }
+
+  // 11. RESHUFFLE
+  if (reshuffleCard && myState.discardPile.length > 0 && myState.drawPile.length <= 3) {
+    return { type: 'PLAY_CARD', playerId: cpuPlayerId, cardId: reshuffleCard.id }
+  }
+
+  // 12. DISCARD fallback — discard non-TX, non-useful cards
+  const keepTypes = new Set<string>([CT.TRANSACTION])
+  const toDiscard = hand.filter((c) => !keepTypes.has(c.type))
+  if (toDiscard.length > 0) {
+    return {
+      type: 'DISCARD_REDRAW',
+      playerId: cpuPlayerId,
+      cardIdsToDiscard: toDiscard.map((c) => c.id),
+    }
+  }
+
   const discardOne = hand[0]!
   return {
     type: 'DISCARD_REDRAW',

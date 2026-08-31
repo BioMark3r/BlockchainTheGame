@@ -11,6 +11,16 @@ export const CardType = {
   CHAIN_REORG: 'CHAIN_REORG',
   FORK: 'FORK',
   BLOCK_REWARD: 'BLOCK_REWARD',
+  // L2 cards
+  SEQUENCER: 'SEQUENCER',
+  DATA_BLOB: 'DATA_BLOB',
+  OPTIMISTIC_ROLLUP: 'OPTIMISTIC_ROLLUP',
+  FRAUD_PROOF: 'FRAUD_PROOF',
+  ZK_PROOF: 'ZK_PROOF',
+  MEV_BOT: 'MEV_BOT',
+  BRIDGE: 'BRIDGE',
+  GAS_SPIKE: 'GAS_SPIKE',
+  HARD_FORK: 'HARD_FORK',
 } as const
 
 export type CardType = typeof CardType[keyof typeof CardType]
@@ -23,7 +33,8 @@ export interface Card {
 export interface Block {
   id: string
   publishedBy: PlayerId
-  transactions: [Card, Card, Card]
+  transactions: Card[]
+  isPending: boolean
 }
 
 export type PlayerId = 'player1' | 'player2' | 'cpu'
@@ -43,6 +54,13 @@ export interface ChainSplitState {
   triggeredBy: PlayerId | null
 }
 
+export interface PendingBatch {
+  blockId: string
+  publishedBy: PlayerId
+  creditsEscrowed: Partial<Record<PlayerId, number>>
+  isZkProven: boolean
+}
+
 export interface GameState {
   phase: 'lobby' | 'playing' | 'ended'
   players: [PlayerState, PlayerState]
@@ -53,6 +71,12 @@ export interface GameState {
   winner: PlayerId | null
   forkReason: 'fork_card' | 'player1_out_of_cards' | 'player2_out_of_cards' | null
   genesisCard: Card
+  gameMode: 'l1' | 'l2'
+  pendingBatches: PendingBatch[]
+  zkProofActive: PlayerId | null
+  bridgeActive: PlayerId | null
+  mevActive: PlayerId | null
+  gasSpike: PlayerId | null
 }
 
 export type TurnActionType = 'PLAY_CARD' | 'PUBLISH_BLOCK' | 'DISCARD_REDRAW'
@@ -68,7 +92,7 @@ export interface PlayCardAction {
 export interface PublishBlockAction {
   type: 'PUBLISH_BLOCK'
   playerId: PlayerId
-  cardIds: [string, string, string]
+  cardIds: string[]
 }
 
 export interface DiscardRedrawAction {

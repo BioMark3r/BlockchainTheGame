@@ -50,6 +50,36 @@ function checkForkCondition(state: GameState, actingPlayerId: PlayerId): GameSta
   return state
 }
 
+/**
+ * Resolve pending batches for a player (pay out their escrowed credits).
+ * Called after turn advances to the next player — resolves batches for that next player.
+ */
+export function resolvePendingBatches(state: GameState, forPlayerId: PlayerId): GameState {
+  if (state.pendingBatches.length === 0) return state
+
+  const myBatches = state.pendingBatches.filter((pb) => pb.publishedBy === forPlayerId)
+  if (myBatches.length === 0) return state
+
+  // Pay out credits
+  const newPlayers: [typeof state.players[0], typeof state.players[1]] = [...state.players] as [
+    typeof state.players[0],
+    typeof state.players[1],
+  ]
+  for (const pb of myBatches) {
+    for (const [pidStr, amount] of Object.entries(pb.creditsEscrowed)) {
+      const pid = pidStr as PlayerId
+      const pIdx = newPlayers.findIndex((p) => p.id === pid)
+      if (pIdx === -1) continue
+      const p = newPlayers[pIdx]!
+      newPlayers[pIdx] = { ...p, credits: p.credits + (amount ?? 0) }
+    }
+  }
+
+  const remainingBatches = state.pendingBatches.filter((pb) => pb.publishedBy !== forPlayerId)
+
+  return { ...state, players: newPlayers, pendingBatches: remainingBatches }
+}
+
 function fail(state: GameState, error: string): ActionResult {
   return { success: false, state, error }
 }
@@ -82,6 +112,18 @@ function handlePlayCard(state: GameState, action: PlayCardAction): ActionResult 
       return fail(state, 'Block Reward requires at least 2 Transaction cards in hand')
     }
   }
+  if (card.type === CardType.DATA_BLOB) {
+    const txCount = player.hand.filter((c) => c.type === CardType.TRANSACTION).length
+    if (txCount < 1) {
+      return fail(state, 'Data Blob requires at least 1 Transaction card in hand')
+    }
+  }
+  if (card.type === CardType.OPTIMISTIC_ROLLUP) {
+    const txCount = player.hand.filter((c) => c.type === CardType.TRANSACTION).length
+    if (txCount < 2) {
+      return fail(state, 'Optimistic Rollup requires at least 2 Transaction cards in hand')
+    }
+  }
   if (card.type === CardType.INVALID_TRANSACTION && !action.targetBlockId) {
     return fail(state, 'INVALID_TRANSACTION requires targetBlockId')
   }
@@ -97,25 +139,37 @@ function handlePlayCard(state: GameState, action: PlayCardAction): ActionResult 
     return fail(state, err instanceof Error ? err.message : String(err))
   }
 
-  // Draw back up to 5-card hand after playing a card
+  // Draw back up to 5-card hand after playing a card (skipped if gas spike)
   if (newState.phase === 'playing') {
     const pIdx = getPlayerIndex(newState, action.playerId)
     const p = newState.players[pIdx]!
-    const toDraw = Math.max(0, 5 - p.hand.length)
-    if (toDraw > 0) {
-      const { drawn, remainingDrawPile } = dealHand(p.drawPile, toDraw)
-      const updatedPlayers: [typeof newState.players[0], typeof newState.players[1]] = [...newState.players] as [
-        typeof newState.players[0],
-        typeof newState.players[1],
-      ]
-      updatedPlayers[pIdx] = { ...p, hand: [...p.hand, ...drawn], drawPile: remainingDrawPile }
-      newState = { ...newState, players: updatedPlayers }
+    const gasSpikeSuppressed = newState.gasSpike === action.playerId
+
+    if (!gasSpikeSuppressed) {
+      const toDraw = Math.max(0, 5 - p.hand.length)
+      if (toDraw > 0) {
+        const { drawn, remainingDrawPile } = dealHand(p.drawPile, toDraw)
+        const updatedPlayers: [typeof newState.players[0], typeof newState.players[1]] = [...newState.players] as [
+          typeof newState.players[0],
+          typeof newState.players[1],
+        ]
+        updatedPlayers[pIdx] = { ...p, hand: [...p.hand, ...drawn], drawPile: remainingDrawPile }
+        newState = { ...newState, players: updatedPlayers }
+      }
+    }
+
+    // Clear gas spike after their turn
+    if (gasSpikeSuppressed) {
+      newState = { ...newState, gasSpike: null }
     }
   }
 
   // Advance turn only if game didn't end via FORK
   if (newState.phase === 'playing') {
-    newState = { ...newState, currentTurn: nextTurn(newState) }
+    const nextPlayer = nextTurn(newState)
+    newState = { ...newState, currentTurn: nextPlayer }
+    // Resolve pending batches for the next player
+    newState = resolvePendingBatches(newState, nextPlayer)
     newState = checkForkCondition(newState, action.playerId)
   }
 
@@ -136,6 +190,7 @@ function handlePublishBlock(state: GameState, action: PublishBlockAction): Actio
   for (let i = 0; i < cards.length; i++) {
     const card = cards[i]
     if (!card) return fail(state, `Card ${action.cardIds[i]} not found in hand`)
+    // In L1 mode, all cards must be TRANSACTION. In L2, PUBLISH_BLOCK still requires 3 TRANSACTION cards.
     if (card.type !== CardType.TRANSACTION) {
       return fail(state, `Card ${card.id} is not a TRANSACTION card`)
     }
@@ -149,6 +204,7 @@ function handlePublishBlock(state: GameState, action: PublishBlockAction): Actio
     id: blockId,
     publishedBy: action.playerId,
     transactions: txCards,
+    isPending: false,
   }
 
   // Remove transaction cards from hand, move to discard
@@ -156,13 +212,18 @@ function handlePublishBlock(state: GameState, action: PublishBlockAction): Actio
   const newHand = player.hand.filter((c) => !usedIds.has(c.id))
   const newDiscard = [...player.discardPile, ...txCards]
 
-  // Draw back up to 5-card hand after publishing
-  const drawCount = Math.max(0, 5 - newHand.length)
-  const { drawn, remainingDrawPile } = dealHand(player.drawPile, drawCount)
+  // Handle gas spike: skip draw-to-5 refill
+  const gasSpikeSuppressed = state.gasSpike === action.playerId
+  let drawnCards: ReturnType<typeof dealHand> | null = null
+  if (!gasSpikeSuppressed) {
+    const drawCount = Math.max(0, 5 - newHand.length)
+    drawnCards = dealHand(player.drawPile, drawCount)
+  }
+
   const newPlayer = {
     ...player,
-    hand: [...newHand, ...drawn],
-    drawPile: remainingDrawPile,
+    hand: drawnCards ? [...newHand, ...drawnCards.drawn] : newHand,
+    drawPile: drawnCards ? drawnCards.remainingDrawPile : player.drawPile,
     discardPile: newDiscard,
   }
   const newPlayers: [typeof state.players[0], typeof state.players[1]] = [...state.players] as [
@@ -171,7 +232,12 @@ function handlePublishBlock(state: GameState, action: PublishBlockAction): Actio
   ]
   newPlayers[playerIdx] = newPlayer
 
-  let newState: GameState = { ...state, players: newPlayers, chain: [...state.chain, block] }
+  let newState: GameState = {
+    ...state,
+    players: newPlayers,
+    chain: [...state.chain, block],
+    gasSpike: gasSpikeSuppressed ? null : state.gasSpike,
+  }
 
   // Calculate and apply credits
   const creditsMap = calculateBlockCredits(newState, action.playerId)
@@ -179,14 +245,40 @@ function handlePublishBlock(state: GameState, action: PublishBlockAction): Actio
     typeof newPlayers[0],
     typeof newPlayers[1],
   ]
+
   for (let i = 0; i < creditedPlayers.length; i++) {
     const p = creditedPlayers[i]!
-    const earned = creditsMap.get(p.id) ?? 0
+    let earned = creditsMap.get(p.id) ?? 0
+    // Bridge doubles publisher's credits
+    if (newState.bridgeActive === action.playerId && p.id === action.playerId) {
+      earned *= 2
+    }
     creditedPlayers[i] = { ...p, credits: p.credits + earned }
   }
 
-  // Reset Validator Redundancy after each block — it's a one-shot doubler, not permanent
-  newState = { ...newState, players: creditedPlayers, currentTurn: nextTurn(newState), validatorRedundancyCount: 0 }
+  // MEV steal
+  let mevActive = newState.mevActive
+  if (mevActive !== null && mevActive !== action.playerId) {
+    const pubIdx = getPlayerIndex(newState, action.playerId)
+    const mevIdx = getPlayerIndex(newState, mevActive)
+    const stolen = Math.min(2, creditedPlayers[pubIdx]!.credits)
+    creditedPlayers[pubIdx] = { ...creditedPlayers[pubIdx]!, credits: creditedPlayers[pubIdx]!.credits - stolen }
+    creditedPlayers[mevIdx] = { ...creditedPlayers[mevIdx]!, credits: creditedPlayers[mevIdx]!.credits + stolen }
+    mevActive = null
+  }
+
+  const nextPlayer = nextTurn(newState)
+  newState = {
+    ...newState,
+    players: creditedPlayers,
+    currentTurn: nextPlayer,
+    validatorRedundancyCount: 0,
+    bridgeActive: null,
+    mevActive,
+  }
+
+  // Resolve pending batches for next player
+  newState = resolvePendingBatches(newState, nextPlayer)
   newState = checkForkCondition(newState, action.playerId)
 
   return succeed(newState)
@@ -211,14 +303,18 @@ function handleDiscardRedraw(state: GameState, action: DiscardRedrawAction): Act
   const remainingHand = player.hand.filter((c) => !discardSet.has(c.id))
   const newDiscardPile = [...player.discardPile, ...discarded]
 
-  // Draw back up to 5-card hand after discarding
-  const drawCount = Math.max(0, 5 - remainingHand.length)
-  const { drawn, remainingDrawPile } = dealHand(player.drawPile, drawCount)
+  // Handle gas spike: skip drawing new cards
+  const gasSpikeSuppressed = state.gasSpike === action.playerId
+  let drawnCards: ReturnType<typeof dealHand> | null = null
+  if (!gasSpikeSuppressed) {
+    const drawCount = Math.max(0, 5 - remainingHand.length)
+    drawnCards = dealHand(player.drawPile, drawCount)
+  }
 
   const newPlayer = {
     ...player,
-    hand: [...remainingHand, ...drawn],
-    drawPile: remainingDrawPile,
+    hand: drawnCards ? [...remainingHand, ...drawnCards.drawn] : remainingHand,
+    drawPile: drawnCards ? drawnCards.remainingDrawPile : player.drawPile,
     discardPile: newDiscardPile,
   }
 
@@ -228,11 +324,16 @@ function handleDiscardRedraw(state: GameState, action: DiscardRedrawAction): Act
   ]
   newPlayers[playerIdx] = newPlayer
 
+  const nextPlayer = nextTurn(state)
   let newState: GameState = {
     ...state,
     players: newPlayers,
-    currentTurn: nextTurn(state),
+    currentTurn: nextPlayer,
+    gasSpike: gasSpikeSuppressed ? null : state.gasSpike,
   }
+
+  // Resolve pending batches for next player
+  newState = resolvePendingBatches(newState, nextPlayer)
   newState = checkForkCondition(newState, action.playerId)
 
   return succeed(newState)

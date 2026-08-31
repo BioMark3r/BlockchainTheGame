@@ -15,6 +15,7 @@ export default function RoomLobby() {
   const [joinCode, setJoinCode] = useState('')
   const [vsCpu, setVsCpu] = useState(false)
   const [difficulty, setDifficulty] = useState<CpuDifficulty>('normal')
+  const [gameMode, setGameMode] = useState<'l1' | 'l2'>('l1')
   const [board, setBoard] = useState(() => loadScoreboard())
   const [hasRejoinable, setHasRejoinable] = useState(false)
   const setCpuDifficulty = useGameStore((s) => s.setCpuDifficulty)
@@ -92,7 +93,7 @@ export default function RoomLobby() {
   function handleCreate() {
     clearError()
     setCpuDifficulty(vsCpu ? difficulty : null)
-    connectWebSocket('create', '', vsCpu, displayName.trim() || 'Player 1', difficulty)
+    connectWebSocket('create', '', vsCpu, displayName.trim() || 'Player 1', difficulty, gameMode)
   }
 
   function handleRejoin() {
@@ -233,6 +234,38 @@ export default function RoomLobby() {
                 onChange={(e) => setDisplayName(e.target.value)}
                 className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-blue-400 text-white placeholder:text-gray-500"
               />
+            </div>
+
+            {/* Game Mode */}
+            <div className="mb-4">
+              <label className="block text-xs text-gray-400 mb-2">Game Mode</label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setGameMode('l1')}
+                  className={`flex-1 py-2 rounded-lg text-xs font-bold transition-colors ${
+                    gameMode === 'l1'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  }`}
+                >
+                  ⛓️ Layer 1
+                </button>
+                <button
+                  onClick={() => setGameMode('l2')}
+                  className={`flex-1 py-2 rounded-lg text-xs font-bold transition-colors ${
+                    gameMode === 'l2'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  }`}
+                >
+                  🔵 Layer 2: Scaling Wars
+                </button>
+              </div>
+              {gameMode === 'l2' && (
+                <p className="text-xs text-blue-400/70 mt-1.5">
+                  New cards: Sequencers, Data Blobs, Optimistic &amp; ZK Rollups, MEV Bots, and more
+                </p>
+              )}
             </div>
 
             <div className="mb-6">

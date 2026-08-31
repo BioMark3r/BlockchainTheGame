@@ -65,7 +65,7 @@ export default function GameBoard({ onReturnToLobby }: Props) {
     )
   }
 
-  const { players, currentTurn, chain, phase, validatorRedundancyCount, chainSplit } = gameState
+  const { players, currentTurn, chain, phase, validatorRedundancyCount, chainSplit, pendingBatches, zkProofActive, bridgeActive, mevActive, gasSpike, gameMode } = gameState
 
   // For spectators localPlayerId is null — treat player1 as the "local" perspective
   const spectatorLocalId = localPlayerId ?? players[0]!.id
@@ -199,6 +199,12 @@ export default function GameBoard({ onReturnToLobby }: Props) {
         localPlayerId={localPlayerId}
         chainSplit={chainSplit}
         validatorRedundancyCount={validatorRedundancyCount}
+        pendingBatches={gameState.pendingBatches}
+        zkProofActive={gameState.zkProofActive}
+        bridgeActive={gameState.bridgeActive}
+        mevActive={gameState.mevActive}
+        gasSpike={gameState.gasSpike}
+        gameMode={gameState.gameMode}
         onBlockSelected={(blockId) => {
           send({
             type: 'ACTION',

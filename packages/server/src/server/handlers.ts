@@ -12,7 +12,7 @@ import { saveReplay } from './replay.js'
 // Message shapes (incoming)
 // ---------------------------------------------------------------------------
 
-interface CreateRoomMsg  { type: 'CREATE_ROOM'; vsComp: boolean; difficulty?: CpuDifficulty; displayName?: string }
+interface CreateRoomMsg  { type: 'CREATE_ROOM'; vsComp: boolean; difficulty?: CpuDifficulty; displayName?: string; gameMode?: 'l1' | 'l2' }
 interface JoinRoomMsg    { type: 'JOIN_ROOM';   roomCode: string; displayName?: string }
 interface RejoinMsg      { type: 'REJOIN';       roomCode: string; playerToken: string }
 interface ActionMsg      { type: 'ACTION';       action: TurnAction }
@@ -123,7 +123,7 @@ function startGame(room: Room, rooms: RoomManager, reconnect: ReconnectManager):
   const [p1, p2] = room.players
   if (!p1 || !p2) return
 
-  const state = createGame(p1.playerId, p2.playerId, p2.isCpu)
+  const state = createGame(p1.playerId, p2.playerId, p2.isCpu, room.gameMode)
   room.gameState = state
   room.initialPlayerIds = [p1.playerId, p2.playerId]
   room.actionLog = []
@@ -184,6 +184,7 @@ export function handleCreateRoom(
   room.players[0]!.ws = ws
   room.players[0]!.displayName = msg.displayName ?? 'Player 1'
   room.cpuDifficulty = msg.difficulty ?? 'normal'
+  room.gameMode = msg.gameMode ?? 'l1'
 
   send(ws, {
     type: 'ROOM_CREATED',
@@ -387,6 +388,12 @@ export function handleConcede(
     winner: otherPlayer.playerId,
     forkReason: 'fork_card',
     genesisCard: prevState.genesisCard,
+    gameMode: prevState.gameMode,
+    pendingBatches: prevState.pendingBatches,
+    zkProofActive: prevState.zkProofActive,
+    bridgeActive: prevState.bridgeActive,
+    mevActive: prevState.mevActive,
+    gasSpike: prevState.gasSpike,
   }
 
   clearTurnTimer(room)

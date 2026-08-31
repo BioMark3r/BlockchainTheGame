@@ -83,7 +83,7 @@ export default function PlayerHand({ hand, localPlayerId, isMyTurn, onInvalidTxP
       soundSpecialCard()
       setSelectedIds([])
       setPendingInvalidTx(card.id)
-    } else if (card.type === CardType.VALIDATOR) {
+    } else if (card.type === CardType.VALIDATOR || card.type === CardType.SEQUENCER) {
       soundValidatorPlaced()
       setPendingInvalidTx(null)
       send({
@@ -162,7 +162,7 @@ export default function PlayerHand({ hand, localPlayerId, isMyTurn, onInvalidTxP
             onClick={handlePublishBlock}
             className="bg-green-600 hover:bg-green-500 text-white text-xs font-bold px-4 py-1.5 rounded-lg transition-colors"
           >
-            📦 Publish Block
+            {gameState?.gameMode === 'l2' ? '⚡ Publish Batch' : '📦 Publish Block'}
           </button>
         )}
 
@@ -256,7 +256,11 @@ export default function PlayerHand({ hand, localPlayerId, isMyTurn, onInvalidTxP
               isMyTurn={isMyTurn}
               isSelected={false}
               isDiscardSelected={discardSelectMode && discardSelectedIds.includes(card.id)}
-              isDisabled={card.type === CardType.BLOCK_REWARD && txCount < 2}
+              isDisabled={
+                (card.type === CardType.BLOCK_REWARD && txCount < 2) ||
+                (card.type === CardType.DATA_BLOB && txCount < 1) ||
+                (card.type === CardType.OPTIMISTIC_ROLLUP && txCount < 2)
+              }
               onClick={() => handleCardClick(card)}
             />
           ))}

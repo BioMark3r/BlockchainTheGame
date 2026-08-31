@@ -50,7 +50,7 @@ export function clearReconnectStorage(): void {
 // Main connection
 // ---------------------------------------------------------------------------
 
-export function connectWebSocket(action: 'create' | 'join', roomCode: string, vsCpu: boolean, playerDisplayName?: string, difficulty?: CpuDifficulty): WebSocket {
+export function connectWebSocket(action: 'create' | 'join', roomCode: string, vsCpu: boolean, playerDisplayName?: string, difficulty?: CpuDifficulty, gameMode?: 'l1' | 'l2'): WebSocket {
   const ws = new WebSocket(WS_URL)
 
   ws.addEventListener('open', () => {
@@ -58,7 +58,7 @@ export function connectWebSocket(action: 'create' | 'join', roomCode: string, vs
     useGameStore.getState().setError(null)
 
     if (action === 'create') {
-      ws.send(JSON.stringify({ type: 'CREATE_ROOM', vsComp: vsCpu, difficulty, displayName: playerDisplayName }))
+      ws.send(JSON.stringify({ type: 'CREATE_ROOM', vsComp: vsCpu, difficulty, displayName: playerDisplayName, gameMode: gameMode ?? 'l1' }))
     } else {
       ws.send(JSON.stringify({ type: 'JOIN_ROOM', roomCode, displayName: playerDisplayName }))
     }
