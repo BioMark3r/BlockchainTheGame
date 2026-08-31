@@ -18,8 +18,9 @@ interface ActionMsg      { type: 'ACTION';       action: TurnAction }
 interface ConcedeMsg     { type: 'CONCEDE' }
 interface RematchMsg     { type: 'REMATCH' }
 interface SpectateMsg    { type: 'SPECTATE';     roomCode: string }
+interface ChatMsg        { type: 'CHAT';          text: string }
 
-type IncomingMsg = CreateRoomMsg | JoinRoomMsg | RejoinMsg | ActionMsg | ConcedeMsg | RematchMsg | SpectateMsg
+type IncomingMsg = CreateRoomMsg | JoinRoomMsg | RejoinMsg | ActionMsg | ConcedeMsg | RematchMsg | SpectateMsg | ChatMsg
 
 // ---------------------------------------------------------------------------
 // Turn timer
@@ -440,6 +441,58 @@ export function handleRematch(
   }
 }
 
+const CHAT_MAX_LEN = 200
+
+export function handleChat(
+  ws: WebSocket,
+  msg: ChatMsg,
+  myToken: string | null,
+  isSpectator: boolean,
+  rooms: RoomManager,
+): void {
+  const text = msg.text?.trim()
+  if (!text || text.length > CHAT_MAX_LEN) return
+
+  // Find the room this sender belongs to
+  let foundRoom: Room | undefined
+  let senderName = 'Spectator'
+  let senderId = 'spectator'
+
+  if (isSpectator) {
+    // Spectator: find room where this ws is in spectators list
+    for (const [, room] of rooms.allRooms()) {
+      if (room.spectators.includes(ws)) {
+        foundRoom = room
+        break
+      }
+    }
+  } else if (myToken) {
+    for (const [, room] of rooms.allRooms()) {
+      for (const p of room.players) {
+        if (p && p.playerToken === myToken) {
+          foundRoom = room
+          senderName = p.displayName
+          senderId = p.playerId
+          break
+        }
+      }
+      if (foundRoom) break
+    }
+  }
+
+  if (!foundRoom) return
+
+  const payload = { type: 'CHAT_MSG', senderId, senderName, text, ts: Date.now() }
+
+  // Broadcast to all players and spectators in the room
+  for (const p of foundRoom.players) {
+    if (p && !p.isCpu && p.ws) send(p.ws, payload)
+  }
+  for (const sw of foundRoom.spectators) {
+    send(sw, payload)
+  }
+}
+
 export function handleSpectate(
   ws: WebSocket,
   msg: SpectateMsg,
@@ -547,6 +600,10 @@ export function createMessageHandler(
       case 'SPECTATE': {
         isSpectator = true
         handleSpectate(ws, msg, rooms)
+        break
+      }
+      case 'CHAT': {
+        handleChat(ws, msg, myToken, isSpectator, rooms)
         break
       }
       default: {

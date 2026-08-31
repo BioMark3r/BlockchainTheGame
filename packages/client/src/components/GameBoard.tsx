@@ -9,6 +9,7 @@ import TurnTimer from './TurnTimer'
 import type { PlayerState } from '@shared/types'
 import { displayName } from '../utils/display'
 import { soundYourTurn, soundBlockPublish, soundChainReorg, soundFork } from '../utils/sounds'
+import ChatPanel from './ChatPanel'
 
 interface Props {
   onReturnToLobby: () => void
@@ -217,6 +218,9 @@ export default function GameBoard({ onReturnToLobby }: Props) {
 
       {/* Game log */}
       <GameLog />
+
+      {/* In-game chat */}
+      <ChatPanel />
 
       {/* Game over modal */}
       {phase === 'ended' && (

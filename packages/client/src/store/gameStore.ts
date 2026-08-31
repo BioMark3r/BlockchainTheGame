@@ -8,6 +8,14 @@ export interface ClientMessage {
   payload: TurnAction
 }
 
+export interface ChatMessage {
+  id: string
+  senderId: string
+  senderName: string
+  text: string
+  ts: number
+}
+
 export interface LogEntry {
   id: string
   text: string
@@ -31,6 +39,7 @@ interface GameStore {
   playerNames: Record<string, string>
   authUser: AuthUser | null
   cpuDifficulty: CpuDifficulty | null
+  chatMessages: ChatMessage[]
 
   setGameState: (state: GameState) => void
   setLocalPlayerId: (id: PlayerId) => void
@@ -48,6 +57,8 @@ interface GameStore {
   setPlayerNames: (names: Record<string, string>) => void
   setAuthUser: (user: AuthUser | null) => void
   setCpuDifficulty: (d: CpuDifficulty | null) => void
+  addChatMessage: (msg: ChatMessage) => void
+  clearChat: () => void
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -65,6 +76,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   playerNames: {},
   authUser: null,
   cpuDifficulty: null,
+  chatMessages: [],
 
   setGameState: (newState) => {
     const prev = get().gameState
@@ -88,6 +100,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setPlayerNames: (names) => set({ playerNames: names }),
   setAuthUser: (user) => set({ authUser: user }),
   setCpuDifficulty: (d) => set({ cpuDifficulty: d }),
+  addChatMessage: (msg) => set((s) => ({ chatMessages: [...s.chatMessages.slice(-199), msg] })),
+  clearChat: () => set({ chatMessages: [] }),
 
   send: (msg) => {
     const { ws } = get()

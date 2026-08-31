@@ -1,5 +1,6 @@
 import { useGameStore } from '../store/gameStore'
 import type { PlayerId, GameState, CpuDifficulty } from '@shared/types'
+import { randomUUID } from '../utils/uuid'
 
 type ServerMessage =
   | { type: 'ROOM_CREATED';    roomCode: string; playerToken: string; playerId: PlayerId }
@@ -10,6 +11,7 @@ type ServerMessage =
   | { type: 'ERROR';           message: string }
   | { type: 'REMATCH_CREATED'; roomCode: string; playerToken: string }
   | { type: 'REMATCH_INVITE';  roomCode: string }
+  | { type: 'CHAT_MSG';        senderId: string; senderName: string; text: string; ts: number }
 
 // Always derive the WebSocket URL at runtime from window.location.
 // Both Vite dev (proxy config) and Docker/nginx (location /ws) route this correctly.
@@ -87,6 +89,7 @@ export function connectWebSocket(action: 'create' | 'join', roomCode: string, vs
         break
       case 'GAME_STARTED':
         store.clearLog()
+        store.clearChat()
         store.setGameState(msg.state)
         store.setIsRematching(false)
         if (msg.displayNames) store.setPlayerNames(msg.displayNames)
@@ -108,6 +111,9 @@ export function connectWebSocket(action: 'create' | 'join', roomCode: string, vs
       case 'REMATCH_INVITE':
         // Player 2 auto-joins the new room
         ws.send(JSON.stringify({ type: 'JOIN_ROOM', roomCode: msg.roomCode }))
+        break
+      case 'CHAT_MSG':
+        store.addChatMessage({ id: randomUUID(), senderId: msg.senderId, senderName: msg.senderName, text: msg.text, ts: msg.ts })
         break
     }
   })
@@ -166,6 +172,9 @@ export function connectSpectator(roomCode: string): WebSocket {
         break
       case 'ERROR':
         store.setError(msg.message)
+        break
+      case 'CHAT_MSG':
+        store.addChatMessage({ id: randomUUID(), senderId: msg.senderId, senderName: msg.senderName, text: msg.text, ts: msg.ts })
         break
       default:
         break
